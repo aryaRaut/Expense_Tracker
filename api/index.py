@@ -2,15 +2,18 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
 from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Font
 import os
-import uuid
+import uuid 
 
 app = Flask(__name__)
+# IMPORTANT: This allows your frontend to talk to this backend
 CORS(app)
 
-FILE_NAME = 'expenses.xlsx'
-META_FILE_NAME = 'meta_data.xlsx'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+FILE_NAME = os.path.join(BASE_DIR, 'expenses.xlsx')
+META_FILE_NAME = os.path.join(BASE_DIR, 'meta_data.xlsx')
 COLUMNS = ['ID', 'Date', 'Type', 'Category', 'Description', 'Amount']
 
 def init_excel():
