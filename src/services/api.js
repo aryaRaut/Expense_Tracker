@@ -1,8 +1,9 @@
-const API_URL = 'http://localhost:5000/api/expenses';
+// Remove the localhost URLs and use relative paths for Vercel
+const API_BASE = '/api';
 
 export const fetchExpenses = async () => {
   try {
-    const response = await fetch(API_URL);
+    const response = await fetch(`${API_BASE}/expenses`);
     if (!response.ok) throw new Error('Failed to fetch expenses');
     return await response.json();
   } catch (error) {
@@ -13,7 +14,7 @@ export const fetchExpenses = async () => {
 
 export const addExpense = async (expenseData) => {
   try {
-    const response = await fetch(API_URL, {
+    const response = await fetch(`${API_BASE}/expenses`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -30,7 +31,7 @@ export const addExpense = async (expenseData) => {
 
 export const deleteExpense = async (id) => {
   try {
-    const response = await fetch(`${API_URL}/${id}`, {
+    const response = await fetch(`${API_BASE}/expenses/${id}`, {
       method: 'DELETE'
     });
     if (!response.ok) throw new Error('Failed to delete expense');
@@ -43,7 +44,7 @@ export const deleteExpense = async (id) => {
 
 export const fetchMetaData = async () => {
   try {
-    const response = await fetch('http://localhost:5000/api/meta');
+    const response = await fetch(`${API_BASE}/meta`);
     if (!response.ok) throw new Error('Failed to fetch meta data');
     return await response.json();
   } catch (error) {
@@ -54,7 +55,7 @@ export const fetchMetaData = async () => {
 
 export const updateMetaData = async (startingBalance) => {
   try {
-    const response = await fetch('http://localhost:5000/api/meta', {
+    const response = await fetch(`${API_BASE}/meta`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
