@@ -1,9 +1,22 @@
-// Remove the localhost URLs and use relative paths for Vercel
+import { supabase } from '../supabaseClient';
+
 const API_BASE = '/api';
+
+const getAuthHeaders = async (existingHeaders = {}) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    return {
+      ...existingHeaders,
+      'Authorization': `Bearer ${session.access_token}`
+    };
+  }
+  return existingHeaders;
+};
 
 export const fetchExpenses = async () => {
   try {
-    const response = await fetch(`${API_BASE}/expenses`);
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_BASE}/expenses`, { headers });
     if (!response.ok) throw new Error('Failed to fetch expenses');
     return await response.json();
   } catch (error) {
@@ -14,11 +27,12 @@ export const fetchExpenses = async () => {
 
 export const addExpense = async (expenseData) => {
   try {
+    const headers = await getAuthHeaders({
+      'Content-Type': 'application/json',
+    });
     const response = await fetch(`${API_BASE}/expenses`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(expenseData)
     });
     if (!response.ok) throw new Error('Failed to add expense');
@@ -31,8 +45,10 @@ export const addExpense = async (expenseData) => {
 
 export const deleteExpense = async (id) => {
   try {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${API_BASE}/expenses/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers
     });
     if (!response.ok) throw new Error('Failed to delete expense');
     return true;
@@ -44,7 +60,8 @@ export const deleteExpense = async (id) => {
 
 export const fetchMetaData = async () => {
   try {
-    const response = await fetch(`${API_BASE}/meta`);
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_BASE}/meta`, { headers });
     if (!response.ok) throw new Error('Failed to fetch meta data');
     return await response.json();
   } catch (error) {
@@ -55,11 +72,12 @@ export const fetchMetaData = async () => {
 
 export const updateMetaData = async (startingBalance) => {
   try {
+    const headers = await getAuthHeaders({
+      'Content-Type': 'application/json',
+    });
     const response = await fetch(`${API_BASE}/meta`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({ startingBalance })
     });
     if (!response.ok) throw new Error('Failed to update meta data');

@@ -3,7 +3,9 @@ import { fetchExpenses, addExpense, deleteExpense, fetchMetaData, updateMetaData
 import Dashboard from './components/Dashboard';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
-import { Activity, PlusCircle, LayoutDashboard, Wallet, Save } from 'lucide-react';
+import { Activity, PlusCircle, LayoutDashboard, Wallet, Save, LogOut } from 'lucide-react';
+import Auth from './components/Auth';
+import { supabase } from './supabaseClient';
 
 function App() {
   const [expenses, setExpenses] = useState([]);
@@ -16,9 +18,29 @@ function App() {
   const [targetBalance, setTargetBalance] = useState('');
   const [netWorthUpdated, setNetWorthUpdated] = useState(false);
 
+  const [session, setSession] = useState(null);
+  const [authInitialized, setAuthInitialized] = useState(false);
+
   useEffect(() => {
-    loadData();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthInitialized(true);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (session) {
+      loadData();
+    }
+  }, [session]);
 
   const loadData = async () => {
     setLoading(true);
@@ -91,6 +113,18 @@ function App() {
     setTimeout(() => setNotification(null), 3000);
   };
 
+  if (!authInitialized) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Auth />;
+  }
+
   return (
     <div className="min-h-screen bg-surface font-inter text-on-surface flex flex-col md:flex-row">
       <aside className="w-full md:w-64 bg-surface-container-lowest border-r border-outline-variant/20 p-6 md:min-h-screen sticky top-0 z-10 glass-effect">
@@ -121,6 +155,15 @@ function App() {
             Account Settings
           </button>
         </nav>
+        <div className="mt-auto pt-8">
+          <button 
+            onClick={() => supabase.auth.signOut()} 
+            className="flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all text-on-surface-variant hover:bg-error-container hover:text-on-error-container w-full"
+          >
+            <LogOut className="w-5 h-5" />
+            Sign Out
+          </button>
+        </div>
       </aside>
 
       <main className="flex-1 p-6 md:p-10 lg:p-12 max-w-6xl mx-auto space-y-10 w-full animate-in fade-in duration-500">
