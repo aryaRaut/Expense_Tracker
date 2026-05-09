@@ -101,7 +101,7 @@ export default function Dashboard({ expenses, startingBalance = 0, netWorthUpdat
         
         {/* Card B: Monthly P&L */}
         <div className={cn(
-            "bg-surface-container-lowest p-8 rounded-3xl shadow-ambient border transition-colors flex flex-col justify-center",
+            "glass-effect-dark p-8 rounded-3xl shadow-ambient transition-colors flex flex-col justify-center",
             isDeficit ? "border-rose-400 bg-rose-500/5 hover:bg-rose-500/10" : "border-surface-container-high hover:bg-surface-bright"
           )}>
           <div className="flex items-center gap-4">
@@ -134,7 +134,7 @@ export default function Dashboard({ expenses, startingBalance = 0, netWorthUpdat
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-surface-container-lowest p-6 rounded-3xl shadow-ambient border border-surface-container-high hover:bg-surface-bright transition-colors">
+        <div className="lg:col-span-2 glass-effect-dark p-6 rounded-3xl transition-colors">
           <h4 className="text-lg font-manrope font-semibold mb-6 text-on-surface">Weekly Spending Trend</h4>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -151,7 +151,7 @@ export default function Dashboard({ expenses, startingBalance = 0, netWorthUpdat
           </div>
         </div>
 
-        <div className="lg:col-span-1 bg-surface-container-lowest p-6 rounded-3xl shadow-ambient border border-surface-container-high hover:bg-surface-bright transition-colors">
+        <div className="lg:col-span-1 glass-effect-dark p-6 rounded-3xl transition-colors">
           <h4 className="text-lg font-manrope font-semibold mb-6 text-on-surface">Category Split</h4>
           {categoryData.length > 0 ? (
             <div className="h-64 w-full">

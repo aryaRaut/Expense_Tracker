@@ -3,7 +3,7 @@ import { fetchExpenses, addExpense, deleteExpense, fetchMetaData, updateMetaData
 import Dashboard from './components/Dashboard';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
-import { Activity, PlusCircle, LayoutDashboard, Wallet, Save, LogOut } from 'lucide-react';
+import { Activity, PlusCircle, LayoutDashboard, Wallet, Save, LogOut, Menu, X, Plus, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import Auth from './components/Auth';
 import { supabase } from './supabaseClient';
 
@@ -20,6 +20,9 @@ function App() {
 
   const [session, setSession] = useState(null);
   const [authInitialized, setAuthInitialized] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [initialTransactionType, setInitialTransactionType] = useState('Expense');
+  const [showAddMenu, setShowAddMenu] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -127,28 +130,45 @@ function App() {
 
   return (
     <div className="min-h-screen bg-surface font-inter text-on-surface flex flex-col md:flex-row">
-      <aside className="w-full md:w-64 bg-surface-container-lowest border-r border-outline-variant/20 p-6 md:min-h-screen sticky top-0 z-10 glass-effect">
-        <h1 className="text-2xl font-manrope font-bold text-primary flex items-center gap-2 mb-10 tracking-tight">
+      {/* Mobile Header */}
+      <div className="md:hidden flex items-center justify-center p-4 glass-effect sticky top-0 z-20 border-b border-outline-variant/20">
+        <h1 className="text-xl font-manrope font-bold text-primary flex items-center gap-2">
+          <Activity className="w-6 h-6 text-primary" />
+          Auditor
+        </h1>
+      </div>
+
+      {/* Sidebar Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-on-surface/20 backdrop-blur-sm z-30 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`fixed md:sticky top-0 left-0 h-full w-64 bg-surface-container-lowest border-r border-outline-variant/20 p-6 z-40 transform transition-transform duration-300 ease-in-out md:translate-x-0 glass-effect flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <h1 className="text-2xl font-manrope font-bold text-primary hidden md:flex items-center gap-2 mb-10 tracking-tight">
           <Activity className="w-8 h-8 text-primary" />
           The Expense Auditor
         </h1>
-        <nav className="flex flex-col gap-3">
+        <nav className="flex flex-col gap-3 flex-1 mt-6 md:mt-0">
           <button 
-            onClick={() => setActiveTab('dashboard')} 
+            onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} 
             className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'dashboard' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}
           >
             <LayoutDashboard className="w-5 h-5" />
             Dashboard
           </button>
           <button 
-            onClick={() => setActiveTab('add')} 
+            onClick={() => { setActiveTab('add'); setInitialTransactionType('Expense'); setIsMobileMenuOpen(false); }} 
             className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'add' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}
           >
             <PlusCircle className="w-5 h-5" />
-            Record Transaction
+            Add Transaction
           </button>
           <button 
-            onClick={() => setActiveTab('settings')} 
+            onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }} 
             className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'settings' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}
           >
             <Wallet className="w-5 h-5" />
@@ -166,7 +186,7 @@ function App() {
         </div>
       </aside>
 
-      <main className="flex-1 p-6 md:p-10 lg:p-12 max-w-6xl mx-auto space-y-10 w-full animate-in fade-in duration-500">
+      <main className="flex-1 px-4 py-6 pb-28 md:pb-10 md:px-8 md:py-10 lg:p-12 max-w-6xl mx-auto space-y-10 w-full animate-in fade-in duration-500">
         {notification && (
           <div className="fixed top-6 right-6 z-50 animate-in fade-in slide-in-from-top-4">
             <div className={`px-6 py-4 rounded-2xl backdrop-blur-md flex items-center gap-3 border shadow-ambient ${notification.type === 'error' ? 'bg-tertiary-container/90 border-tertiary text-tertiary-fixed' : 'bg-emerald-600/95 border-emerald-500 text-white shadow-[0_8px_30px_rgba(52,211,153,0.4)]'}`}>
@@ -230,7 +250,7 @@ function App() {
             </header>
             
             <div className="scale-[1.02] transform origin-top">
-              <ExpenseForm onAdd={handleAddExpense} isLoading={adding} />
+              <ExpenseForm onAdd={handleAddExpense} isLoading={adding} initialTransactionType={initialTransactionType} />
             </div>
           </div>
         ) : (
@@ -248,6 +268,65 @@ function App() {
           </div>
         )}
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant/20 px-6 py-4 z-40 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+        <div className="flex justify-between items-center relative">
+          <button 
+            onClick={() => { setActiveTab('dashboard'); setShowAddMenu(false); }}
+            className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'dashboard' ? 'text-primary' : 'text-on-surface-variant'}`}
+          >
+            <LayoutDashboard className="w-6 h-6" />
+            <span className="text-[10px] font-semibold">Dashboard</span>
+          </button>
+
+          {/* Floating Action Button */}
+          <div className="relative -top-8">
+            <button 
+              onClick={() => setShowAddMenu(!showAddMenu)}
+              className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-300 ${showAddMenu ? 'rotate-45 bg-surface-variant text-on-surface-variant' : 'bg-primary hover:scale-105'}`}
+            >
+              <Plus className="w-8 h-8" />
+            </button>
+            
+            {/* Add Action Menu */}
+            {showAddMenu && (
+              <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col gap-3 animate-in slide-in-from-bottom-2 fade-in">
+                <button 
+                  onClick={() => { setInitialTransactionType('Income'); setActiveTab('add'); setShowAddMenu(false); }}
+                  className="flex items-center gap-3 bg-surface-container-lowest px-4 py-3 rounded-2xl shadow-xl border border-outline-variant/10 text-emerald-600 font-semibold text-sm whitespace-nowrap hover:bg-emerald-50 transition-colors"
+                >
+                  <ArrowDownCircle className="w-5 h-5" />
+                  Add Income
+                </button>
+                <button 
+                  onClick={() => { setInitialTransactionType('Expense'); setActiveTab('add'); setShowAddMenu(false); }}
+                  className="flex items-center gap-3 bg-surface-container-lowest px-4 py-3 rounded-2xl shadow-xl border border-outline-variant/10 text-rose-500 font-semibold text-sm whitespace-nowrap hover:bg-rose-50 transition-colors"
+                >
+                  <ArrowUpCircle className="w-5 h-5" />
+                  Add Expense
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button 
+            onClick={() => { setActiveTab('settings'); setShowAddMenu(false); }}
+            className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'settings' ? 'text-primary' : 'text-on-surface-variant'}`}
+          >
+            <Wallet className="w-6 h-6" />
+            <span className="text-[10px] font-semibold">Settings</span>
+          </button>
+        </div>
+      </div>
+      
+      {/* Overlay for Action Menu */}
+      {showAddMenu && (
+        <div 
+          className="fixed inset-0 bg-on-surface/5 backdrop-blur-[2px] z-30 md:hidden"
+          onClick={() => setShowAddMenu(false)}
+        />
+      )}
     </div>
   );
 }

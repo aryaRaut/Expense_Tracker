@@ -15,37 +15,25 @@ const CATEGORIES = [
   'Other'
 ];
 
-export default function ExpenseForm({ onAdd, isLoading }) {
+export default function ExpenseForm({ onAdd, isLoading, initialTransactionType = 'Expense' }) {
   const [formData, setFormData] = useState({
-    type: 'Expense',
+    type: initialTransactionType,
     amount: '',
     description: '',
     category: 'Other',
     date: format(new Date(), 'yyyy-MM-dd')
   });
 
-  const [aiGuessed, setAiGuessed] = useState(false);
-  const [aiGuessedType, setAiGuessedType] = useState(false);
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, type: initialTransactionType }));
+  }, [initialTransactionType]);
 
-  // Simulate AI Category and Type detection
+  const [aiGuessed, setAiGuessed] = useState(false);
+
+  // Simulate AI Category detection
   useEffect(() => {
     const desc = formData.description.toLowerCase();
     
-    // Type detection
-    let guessedType = null;
-    if (desc.match(/salary|bonus|refund/)) {
-      guessedType = 'Income';
-    } else if (desc.trim().length > 2) {
-      // Default to expense if not matched and has some length
-      guessedType = 'Expense';
-    }
-
-    if (guessedType && guessedType !== formData.type) {
-      setFormData(prev => ({ ...prev, type: guessedType }));
-      setAiGuessedType(true);
-      setTimeout(() => setAiGuessedType(false), 2000);
-    }
-
     let guessed = null;
 
     if (desc.match(/uber|lyft|taxi|gas|train|bus/)) guessed = 'Transportation';
@@ -70,7 +58,7 @@ export default function ExpenseForm({ onAdd, isLoading }) {
     
     // Reset form after successful submission
     setFormData({
-      type: 'Expense',
+      type: formData.type,
       amount: '',
       description: '',
       category: 'Other',
@@ -83,45 +71,44 @@ export default function ExpenseForm({ onAdd, isLoading }) {
   };
 
   return (
-    <div className="bg-surface-container-lowest p-10 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-surface-container-high">
-      <h3 className="text-xl font-manrope font-semibold text-on-surface flex items-center gap-2 mb-6">
-        <Plus className="w-5 h-5 text-primary" />
-        Record Expense
-      </h3>
+    <div className="glass-effect p-8 md:p-10 rounded-[2rem]">
+      {/* Segregated Tabs */}
+      <div className="flex gap-4 mb-8">
+        <button
+          type="button"
+          onClick={() => setFormData(prev => ({ ...prev, type: 'Expense' }))}
+          className={cn(
+            "flex-1 py-4 text-center rounded-2xl font-manrope font-bold text-lg transition-all border-2",
+            formData.type === 'Expense' 
+              ? "bg-[#FEE2E2] border-red-200 text-red-600 shadow-[0_0_20px_rgba(254,226,226,0.5)]" 
+              : "bg-surface-container-low border-transparent text-on-surface-variant hover:bg-surface-container-highest"
+          )}
+        >
+          Record Expense
+        </button>
+        <button
+          type="button"
+          onClick={() => setFormData(prev => ({ ...prev, type: 'Income' }))}
+          className={cn(
+            "flex-1 py-4 text-center rounded-2xl font-manrope font-bold text-lg transition-all border-2",
+            formData.type === 'Income' 
+              ? "bg-[#DCFCE7] border-green-200 text-green-600 shadow-[0_0_20px_rgba(220,252,231,0.5)]" 
+              : "bg-surface-container-low border-transparent text-on-surface-variant hover:bg-surface-container-highest"
+          )}
+        >
+          Record Income
+        </button>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 flex flex-col">
-        {/* Type Toggle */}
-        <div className="flex gap-4 p-1 bg-surface-container-low rounded-2xl relative">
-          {aiGuessedType && (
-            <span className="absolute -top-3 right-2 text-[10px] font-bold text-primary animate-pulse flex items-center gap-1 bg-surface-container-lowest px-2 py-0.5 rounded-md border border-primary/20">
-              <Sparkles className="w-3 h-3" /> AI Suggested
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={() => setFormData(prev => ({ ...prev, type: 'Expense' }))}
-            className={cn(
-              "flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all",
-              formData.type === 'Expense' ? "bg-surface text-on-surface shadow-[0_2px_10px_rgba(0,0,0,0.05)] border border-outline-variant/10" : "text-on-surface-variant hover:text-on-surface"
-            )}
-          >
-            Expense
-          </button>
-          <button
-            type="button"
-            onClick={() => setFormData(prev => ({ ...prev, type: 'Income' }))}
-            className={cn(
-              "flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all",
-              formData.type === 'Income' ? "bg-surface text-on-surface shadow-[0_2px_10px_rgba(0,0,0,0.05)] border border-outline-variant/10" : "text-on-surface-variant hover:text-on-surface"
-            )}
-          >
-            Income
-          </button>
-        </div>
-
         {/* Amount */}
         <div>
-          <label className="block text-label-sm uppercase tracking-wide text-on-surface-variant font-medium mb-2">Amount</label>
+          <div className="flex justify-between items-end mb-2">
+            <label className="block text-label-sm uppercase tracking-wide text-on-surface-variant font-medium">Amount</label>
+            <span className="text-xs text-on-surface-variant font-medium">
+              {formData.type === 'Expense' ? "How much did you spend?" : "How much did you earn?"}
+            </span>
+          </div>
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant font-semibold">₹</span>
             <input 
@@ -132,7 +119,10 @@ export default function ExpenseForm({ onAdd, isLoading }) {
               required
               value={formData.amount}
               onChange={handleChange}
-              className="w-full bg-surface-container-low text-on-surface rounded-2xl py-3 pl-8 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow appearance-none font-medium"
+              className={cn(
+                "w-full bg-white/40 backdrop-blur-md border border-white/50 text-on-surface rounded-2xl py-3 pl-8 pr-4 focus:outline-none focus:ring-2 transition-shadow appearance-none font-medium shadow-sm",
+                formData.type === 'Expense' ? "focus:ring-red-200" : "focus:ring-green-200"
+              )}
               placeholder="0.00"
             />
           </div>
@@ -141,13 +131,37 @@ export default function ExpenseForm({ onAdd, isLoading }) {
         {/* Description */}
         <div>
           <label className="block text-label-sm uppercase tracking-wide text-on-surface-variant font-medium mb-2">Description</label>
+          <div className="mb-3 bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-3">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs font-semibold text-primary">AI Suggestion Guide</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(formData.type === 'Expense' 
+                ? ["Groceries at DMart", "Office lunch", "Uber ride"] 
+                : ["Salary credit", "Freelance design milestone", "Interest payout"]
+              ).map(suggestion => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, description: suggestion }))}
+                  className="text-[10px] bg-surface-container-low hover:bg-surface-container-highest text-on-surface-variant px-2.5 py-1 rounded-full transition-colors border border-outline-variant/10"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
           <input 
             type="text" 
             name="description"
             required
             value={formData.description}
             onChange={handleChange}
-            className="w-full bg-surface-container-low text-on-surface rounded-2xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow font-medium"
+            className={cn(
+                "w-full bg-white/40 backdrop-blur-md border border-white/50 text-on-surface rounded-2xl py-3 px-4 focus:outline-none focus:ring-2 transition-shadow font-medium shadow-sm",
+                formData.type === 'Expense' ? "focus:ring-red-200" : "focus:ring-green-200"
+            )}
             placeholder="What was this for?"
           />
         </div>
@@ -168,8 +182,9 @@ export default function ExpenseForm({ onAdd, isLoading }) {
               value={formData.category}
               onChange={handleChange}
               className={cn(
-                "w-full bg-surface-container-low text-on-surface rounded-2xl py-3 px-4 appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-medium",
-                aiGuessed && "ring-2 ring-primary/50 bg-primary/5"
+                "w-full bg-white/40 backdrop-blur-md border border-white/50 text-on-surface rounded-2xl py-3 px-4 appearance-none focus:outline-none focus:ring-2 transition-all font-medium shadow-sm",
+                formData.type === 'Expense' ? "focus:ring-red-200" : "focus:ring-green-200",
+                aiGuessed && (formData.type === 'Expense' ? "ring-2 ring-red-200 bg-red-50/50" : "ring-2 ring-green-200 bg-green-50/50")
               )}
             >
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -187,19 +202,27 @@ export default function ExpenseForm({ onAdd, isLoading }) {
             value={formData.date}
             onChange={handleChange}
             max={format(new Date(), 'yyyy-MM-dd')}
-            className="w-full bg-surface-container-low text-on-surface rounded-2xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow font-medium [&::-webkit-calendar-picker-indicator]:opacity-50"
+            className={cn(
+              "w-full bg-white/40 backdrop-blur-md border border-white/50 text-on-surface rounded-2xl py-3 px-4 focus:outline-none focus:ring-2 transition-shadow font-medium shadow-sm [&::-webkit-calendar-picker-indicator]:opacity-50",
+              formData.type === 'Expense' ? "focus:ring-red-200" : "focus:ring-green-200"
+            )}
           />
         </div>
 
         <button 
           type="submit" 
           disabled={isLoading}
-          className="mt-4 w-full bg-gradient-to-br from-primary to-primary-container hover:from-primary/90 hover:to-primary text-white font-semibold py-4 rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
+          className={cn(
+            "mt-4 w-full text-white font-semibold py-4 rounded-2xl shadow-lg transition-all duration-300 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center",
+            formData.type === 'Expense' 
+              ? "bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-[0_8px_20px_rgba(225,29,72,0.3)] hover:shadow-[0_12px_25px_rgba(225,29,72,0.4)]"
+              : "bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-[0_8px_20px_rgba(16,185,129,0.3)] hover:shadow-[0_12px_25px_rgba(16,185,129,0.4)]"
+          )}
         >
           {isLoading ? (
             <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
-            'Save Expense'
+            formData.type === 'Expense' ? 'Add Expense' : 'Add Income'
           )}
         </button>
       </form>

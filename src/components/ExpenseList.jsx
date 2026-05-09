@@ -17,14 +17,14 @@ export default function ExpenseList({ expenses, onDelete }) {
   }
 
   return (
-    <div className="bg-surface-container-lowest rounded-3xl shadow-ambient border border-surface-container-high overflow-hidden">
-      <div className="p-6 md:p-8 border-b border-surface-container-high">
-        <h3 className="text-xl font-manrope font-semibold text-on-surface">Recent Transactions</h3>
+    <div className="space-y-4">
+      <div className="px-2 md:px-4">
+        <h3 className="text-2xl font-manrope font-bold text-on-surface">Recent Transactions</h3>
       </div>
       
-      <div className="flex flex-col divide-y divide-surface-container-high/60">
+      <div className="grid grid-cols-1 gap-4">
         {expenses.map((expense) => (
-          <div key={expense.id} className="p-6 md:px-8 hover:bg-surface-bright transition-colors flex items-center justify-between group">
+          <div key={expense.id} className="glass-effect-dark p-6 rounded-3xl transition-all duration-300 hover:-translate-y-1 flex flex-col sm:flex-row sm:items-center justify-between group gap-4">
             
             <div className="flex items-center gap-4">
               <div className={cn("hidden sm:flex p-3 rounded-2xl", expense.type === 'Income' ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600")}>
@@ -48,7 +48,7 @@ export default function ExpenseList({ expenses, onDelete }) {
               </span>
               <button 
                 onClick={() => onDelete(expense.id)}
-                className="text-outline-variant hover:text-tertiary transition-colors p-2 rounded-xl hover:bg-tertiary-container/20 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                className="text-outline-variant hover:text-tertiary transition-colors p-2 rounded-xl hover:bg-tertiary-container/20 opacity-100 sm:opacity-0 group-hover:opacity-100 focus:opacity-100"
                 aria-label="Delete expense"
               >
                 <Trash2 className="w-5 h-5" />
