@@ -25,10 +25,15 @@ export const fetchExpenses = async () => {
 
 export const addExpense = async (expenseData) => {
   const userId = await getUserId();
-  
+  if (!userId) throw new Error("Authentication required");
+
+  // Robust payload mapping to prevent 400 errors
   const payload = {
-    ...expenseData,
-    user_id: userId
+    user_id: userId,
+    description: expenseData.description || expenseData.desc || "Untitled Expense",
+    amount: parseFloat(expenseData.amount) || 0, // Ensure numeric type
+    category: expenseData.category || "General",
+    date: expenseData.date || new Date().toISOString().split('T')[0]
   };
 
   const { data, error } = await supabase
@@ -38,7 +43,8 @@ export const addExpense = async (expenseData) => {
     .single();
 
   if (error) {
-    console.error("Supabase Add Expense Error:", error);
+    // Detailed logging to pinpoint exact column failures
+    console.error("Supabase Add Expense Error:", error.message, error.details);
     throw error;
   }
   return data;
@@ -60,7 +66,7 @@ export const fetchSplits = async () => {
   const userId = await getUserId();
   if (!userId) return [];
   
-  // FIX: Removed aliases (name:) and forced a single-line string to prevent parsing errors
+  // Single-line select string to bypass parser errors (PGRST100)
   const { data, error } = await supabase
     .from('split_details')
     .select('id,friend_name,amount_owed,is_paid,created_at,expenses(description,date,category)')
