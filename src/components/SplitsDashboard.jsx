@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { fetchSplits, updateSplitPaidStatus } from '../services/api';
-import { Users, CheckCircle2, Circle, Calendar, FileText } from 'lucide-react';
+import { Users, CheckCircle2, Circle, Calendar, FileText, AlertCircle } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 export default function SplitsDashboard() {
   const [splits, setSplits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [debugInfo, setDebugInfo] = useState(null);
 
   useEffect(() => {
     loadSplits();
@@ -17,22 +18,21 @@ export default function SplitsDashboard() {
     try {
       const data = await fetchSplits();
       setSplits(data);
+      setDebugInfo({ count: data.length, firstItem: data[0] || 'No data' });
     } catch (err) {
       console.error("Dashboard Load Error:", err);
       setError('Failed to load splits.');
+      setDebugInfo({ error: err.message });
     } finally {
       setLoading(false);
     }
   };
 
   const handleTogglePaid = async (splitId, currentStatus) => {
-    // Optimistic UI update
     setSplits(prev => prev.map(s => s.id === splitId ? { ...s, is_paid: !currentStatus } : s));
-    
     try {
       await updateSplitPaidStatus(splitId, !currentStatus);
     } catch (err) {
-      // Revert on failure
       setSplits(prev => prev.map(s => s.id === splitId ? { ...s, is_paid: currentStatus } : s));
       console.error("Toggle Status Error:", err);
     }
@@ -46,19 +46,10 @@ export default function SplitsDashboard() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="text-center py-10 text-red-500">
-        <p>{error}</p>
-        <button onClick={loadSplits} className="mt-4 text-primary font-semibold hover:underline">Try Again</button>
-      </div>
-    );
-  }
-
   const unpaidSplits = splits.filter(s => !s.is_paid);
   const paidSplits = splits.filter(s => s.is_paid);
-
-  // Logic to handle both possible database column names for the total calculation
+  
+  // Handlers for the database column naming mismatch confirmed in image_e9735f.png
   const totalOwed = unpaidSplits.reduce((acc, curr) => {
     const amount = curr.amount_owed || curr.amount || 0;
     return acc + parseFloat(amount);
@@ -81,14 +72,21 @@ export default function SplitsDashboard() {
       </header>
 
       {splits.length === 0 ? (
-        <div className="glass-effect p-12 rounded-[2rem] text-center border-dashed border-2 border-outline-variant/30">
-          <Users className="w-16 h-16 text-on-surface-variant/30 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-on-surface">No splits found</h3>
-          <p className="text-on-surface-variant mt-2">When you split expenses with friends, they will appear here.</p>
+        <div className="space-y-6">
+          <div className="glass-effect p-12 rounded-[2rem] text-center border-dashed border-2 border-outline-variant/30">
+            <Users className="w-16 h-16 text-on-surface-variant/30 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-on-surface">No splits found</h3>
+            <p className="text-on-surface-variant mt-2">Try adding a new expense with the "Lending" category.</p>
+          </div>
+          
+          {/* DEBUG SECTION - Remove this once fixed */}
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs font-mono text-amber-800">
+            <p className="font-bold mb-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Debug Console:</p>
+            <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+          </div>
         </div>
       ) : (
         <div className="space-y-8">
-          {/* Unpaid Section */}
           {unpaidSplits.length > 0 && (
             <section>
               <h3 className="text-lg font-semibold text-on-surface mb-4 flex items-center gap-2">
@@ -97,17 +95,12 @@ export default function SplitsDashboard() {
               </h3>
               <div className="grid gap-4">
                 {unpaidSplits.map(split => (
-                  <SplitCard 
-                    key={split.id} 
-                    split={split} 
-                    onToggle={() => handleTogglePaid(split.id, split.is_paid)} 
-                  />
+                  <SplitCard key={split.id} split={split} onToggle={() => handleTogglePaid(split.id, split.is_paid)} />
                 ))}
               </div>
             </section>
           )}
 
-          {/* Paid Section */}
           {paidSplits.length > 0 && (
             <section className="opacity-80">
               <h3 className="text-lg font-semibold text-on-surface mb-4 flex items-center gap-2">
@@ -116,11 +109,7 @@ export default function SplitsDashboard() {
               </h3>
               <div className="grid gap-4">
                 {paidSplits.map(split => (
-                  <SplitCard 
-                    key={split.id} 
-                    split={split} 
-                    onToggle={() => handleTogglePaid(split.id, split.is_paid)} 
-                  />
+                  <SplitCard key={split.id} split={split} onToggle={() => handleTogglePaid(split.id, split.is_paid)} />
                 ))}
               </div>
             </section>
@@ -132,7 +121,7 @@ export default function SplitsDashboard() {
 }
 
 function SplitCard({ split, onToggle }) {
-  // Map database names to UI variables
+  // Mapping the confirmed names from image_e9735f.png
   const displayName = split.friend_name || split.name || 'Unknown Friend';
   const displayAmount = split.amount_owed || split.amount || 0;
   
@@ -145,23 +134,16 @@ function SplitCard({ split, onToggle }) {
       split.is_paid ? "bg-surface-container-lowest/50 border-emerald-100" : "bg-surface-container-lowest border-outline-variant/20"
     )}>
       <div className="flex items-center gap-4 flex-1 min-w-0">
-        <button 
-          onClick={onToggle}
-          className="shrink-0 transition-transform active:scale-95"
-          aria-label={split.is_paid ? "Mark as unpaid" : "Mark as paid"}
-        >
+        <button onClick={onToggle} className="shrink-0 transition-transform active:scale-95">
           {split.is_paid ? (
-            <CheckCircle2 className="w-8 h-8 text-emerald-500 hover:text-emerald-600 transition-colors" />
+            <CheckCircle2 className="w-8 h-8 text-emerald-500" />
           ) : (
-            <Circle className="w-8 h-8 text-outline-variant hover:text-emerald-500/50 transition-colors" />
+            <Circle className="w-8 h-8 text-outline-variant hover:text-emerald-500/50" />
           )}
         </button>
         
         <div className="truncate">
-          <p className={cn(
-            "font-bold text-lg truncate",
-            split.is_paid ? "text-on-surface-variant line-through" : "text-on-surface"
-          )}>
+          <p className={cn("font-bold text-lg truncate", split.is_paid && "text-on-surface-variant line-through")}>
             {displayName}
           </p>
           <div className="flex items-center gap-3 text-xs text-on-surface-variant font-medium mt-1">
@@ -180,10 +162,7 @@ function SplitCard({ split, onToggle }) {
       </div>
 
       <div className="text-right shrink-0">
-        <p className={cn(
-          "font-bold text-xl",
-          split.is_paid ? "text-on-surface-variant" : "text-rose-600"
-        )}>
+        <p className={cn("font-bold text-xl", split.is_paid ? "text-on-surface-variant" : "text-rose-600")}>
           ₹{parseFloat(displayAmount).toFixed(2)}
         </p>
       </div>
