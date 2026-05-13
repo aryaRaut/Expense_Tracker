@@ -1,9 +1,13 @@
 import { supabase } from '../supabaseClient';
 
-// Helper to get current user ID
+// Helper to get current user ID reliably
 const getUserId = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  return user?.id;
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    console.error("User not authenticated");
+    return null;
+  }
+  return user.id;
 };
 
 export const fetchExpenses = async () => {
@@ -19,14 +23,25 @@ export const fetchExpenses = async () => {
   return data;
 };
 
+// FIX: Ensure user_id is included in the insert payload to avoid 400/403 errors
 export const addExpense = async (expenseData) => {
+  const userId = await getUserId();
+  
+  const payload = {
+    ...expenseData,
+    user_id: userId // Explicitly attach the owner ID
+  };
+
   const { data, error } = await supabase
     .from('expenses')
-    .insert([expenseData])
+    .insert([payload])
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Supabase Add Expense Error:", error);
+    throw error;
+  }
   return data;
 };
 
@@ -45,13 +60,13 @@ export const deleteExpense = async (id) => {
 export const fetchSplits = async () => {
   const userId = await getUserId();
   
-  // UPDATED: Changed column names to match image_e9735f.png
+  // Mapping columns for the UI while keeping DB names secure
   const { data, error } = await supabase
     .from('split_details')
     .select(`
       id,
-      name:friend_name,    /* Mapping friend_name to 'name' for the UI */
-      amount:amount_owed,  /* Mapping amount_owed to 'amount' for the UI */
+      name:friend_name,
+      amount:amount_owed,
       is_paid,
       created_at,
       expenses (
@@ -78,7 +93,10 @@ export const updateSplitPaidStatus = async (splitId, isPaid) => {
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Update split error:", error);
+    throw error;
+  }
   return data;
 };
 
@@ -106,6 +124,9 @@ export const updateMetaData = async (startingBalance) => {
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Update meta error:", error);
+    throw error;
+  }
   return data;
 };
