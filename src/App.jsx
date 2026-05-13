@@ -4,7 +4,8 @@ import Dashboard from './components/Dashboard';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
 import SplitSettlement from './components/SplitSettlement';
-import { Activity, PlusCircle, LayoutDashboard, Wallet, Save, LogOut, Menu, X, Plus, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import SplitsDashboard from './components/SplitsDashboard';
+import { Activity, PlusCircle, LayoutDashboard, Wallet, Save, LogOut, Menu, X, Plus, ArrowUpCircle, ArrowDownCircle, Users } from 'lucide-react';
 import Auth from './components/Auth';
 import { supabase } from './supabaseClient';
 
@@ -176,6 +177,13 @@ function App() {
             Add Transaction
           </button>
           <button 
+            onClick={() => { setActiveTab('splits'); setIsMobileMenuOpen(false); }} 
+            className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'splits' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}
+          >
+            <Users className="w-5 h-5" />
+            Splits
+          </button>
+          <button 
             onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }} 
             className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'settings' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}
           >
@@ -278,6 +286,8 @@ function App() {
               isLoading={adding}
             />
           </div>
+        ) : activeTab === 'splits' ? (
+          <SplitsDashboard />
         ) : (
           <div className="animate-in fade-in duration-500 space-y-10">
             <header>
@@ -334,6 +344,14 @@ function App() {
               </div>
             )}
           </div>
+
+          <button 
+            onClick={() => { setActiveTab('splits'); setShowAddMenu(false); }}
+            className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'splits' ? 'text-primary' : 'text-on-surface-variant'}`}
+          >
+            <Users className="w-6 h-6" />
+            <span className="text-[10px] font-semibold">Splits</span>
+          </button>
 
           <button 
             onClick={() => { setActiveTab('settings'); setShowAddMenu(false); }}

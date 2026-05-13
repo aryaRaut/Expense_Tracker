@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Sparkles, Plus } from 'lucide-react';
+import { Sparkles, Plus, HandCoins } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 const CATEGORIES = [
@@ -12,6 +12,7 @@ const CATEGORIES = [
   'Health',
   'College',
   'Party',
+  'Lending/Friends',
   'Other'
 ];
 
@@ -32,6 +33,12 @@ export default function ExpenseForm({ onAdd, isLoading, initialTransactionType =
       setIsSplitting(false);
     }
   }, [initialTransactionType]);
+
+  useEffect(() => {
+    if (formData.category === 'Lending/Friends') {
+      setIsSplitting(true);
+    }
+  }, [formData.category]);
 
   const [aiGuessed, setAiGuessed] = useState(false);
 
@@ -180,7 +187,10 @@ export default function ExpenseForm({ onAdd, isLoading, initialTransactionType =
         {/* Category (AI Augmented) */}
         <div>
           <div className="flex justify-between items-end mb-2">
-            <label className="block text-label-sm uppercase tracking-wide text-on-surface-variant font-medium">Category</label>
+            <label className="flex items-center text-label-sm uppercase tracking-wide text-on-surface-variant font-medium">
+              Category
+              {formData.category === 'Lending/Friends' && <HandCoins className="w-4 h-4 text-primary ml-2" />}
+            </label>
             {aiGuessed && (
                 <span className="text-xs font-semibold text-primary animate-pulse flex items-center gap-1">
                   <Sparkles className="w-3 h-3" /> AI Selected

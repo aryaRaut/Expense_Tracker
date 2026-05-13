@@ -87,3 +87,33 @@ export const updateMetaData = async (startingBalance) => {
     throw error;
   }
 };
+
+export const fetchSplits = async () => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_BASE}/splits`, { headers });
+    if (!response.ok) throw new Error('Failed to fetch splits');
+    return await response.json();
+  } catch (error) {
+    console.error("Fetch splits error:", error);
+    return [];
+  }
+};
+
+export const updateSplitPaidStatus = async (splitId, isPaid) => {
+  try {
+    const headers = await getAuthHeaders({
+      'Content-Type': 'application/json',
+    });
+    const response = await fetch(`${API_BASE}/splits/${splitId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ is_paid: isPaid })
+    });
+    if (!response.ok) throw new Error('Failed to update split');
+    return await response.json();
+  } catch (error) {
+    console.error("Update split error:", error);
+    throw error;
+  }
+};

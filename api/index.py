@@ -2,7 +2,9 @@ import os
 import uuid
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+# pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
+# pyrefly: ignore [missing-import]
 from supabase import create_client, Client
 
 load_dotenv()
@@ -82,23 +84,40 @@ def add_expense():
         "amount": amount_val
     }
     
-    if 'split_details' in data:
-        expense_doc['split_details'] = data['split_details']
-    
     try:
         response = supabase.table("expenses").insert(expense_doc).execute()
         if len(response.data) > 0:
             e = response.data[0]
+            expense_id = e.get('id')
+            
+            # Handle split_details
+            inserted_splits = []
+            if 'split_details' in data and data['split_details']:
+                split_inserts = []
+                for split in data['split_details']:
+                    split_inserts.append({
+                        "expense_id": expense_id,
+                        "user_id": user.id,
+                        "name": split.get('name', ''),
+                        "amount": split.get('amount', 0),
+                        "is_paid": split.get('paid', False)
+                    })
+                if split_inserts:
+                    try:
+                        splits_response = supabase.table("split_details").insert(split_inserts).execute()
+                        inserted_splits = splits_response.data
+                    except Exception as split_err:
+                        print("Error inserting splits:", split_err)
+
             expense_item = {
-                "id": str(e.get('id')),
+                "id": str(expense_id),
                 "date": str(e.get('date'))[:10] if e.get('date') else '',
                 "type": e.get('type', 'Expense'),
                 "category": e.get('category'),
                 "description": e.get('description'),
-                "amount": e.get('amount')
+                "amount": e.get('amount'),
+                "split_details": inserted_splits
             }
-            if 'split_details' in e:
-                expense_item['split_details'] = e['split_details']
             return jsonify(expense_item)
         return jsonify({"error": "Failed to insert"}), 500
     except Exception as e:
@@ -166,6 +185,47 @@ def update_meta():
         return jsonify({"startingBalance": balance})
     except Exception as e:
         print("Error writing meta data:", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/splits', methods=['GET'])
+def get_splits():
+    if not supabase:
+         return jsonify([]), 500
+         
+    user = get_user_from_request(request)
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        # Join with expenses table to get date and description
+        response = supabase.table("split_details").select("*, expenses(description, date)").eq("user_id", user.id).execute()
+        return jsonify(response.data)
+    except Exception as e:
+        print("Error reading splits:", e)
+        return jsonify([])
+
+@app.route('/api/splits/<split_id>', methods=['PUT'])
+def update_split(split_id):
+    if not supabase:
+         return jsonify({"error": "DB not configured"}), 500
+         
+    user = get_user_from_request(request)
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json
+    is_paid = data.get('is_paid')
+    
+    if is_paid is None:
+        return jsonify({"error": "Missing is_paid"}), 400
+
+    try:
+        response = supabase.table("split_details").update({"is_paid": is_paid}).eq("id", split_id).eq("user_id", user.id).execute()
+        if len(response.data) > 0:
+            return jsonify(response.data[0])
+        return jsonify({"error": "Split not found or unauthorized"}), 404
+    except Exception as e:
+        print("Error updating split:", e)
         return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
