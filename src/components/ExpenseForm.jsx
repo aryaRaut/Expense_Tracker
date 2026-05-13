@@ -15,7 +15,7 @@ const CATEGORIES = [
   'Other'
 ];
 
-export default function ExpenseForm({ onAdd, isLoading, initialTransactionType = 'Expense' }) {
+export default function ExpenseForm({ onAdd, isLoading, initialTransactionType = 'Expense', onProceedToSplit }) {
   const [formData, setFormData] = useState({
     type: initialTransactionType,
     amount: '',
@@ -24,8 +24,13 @@ export default function ExpenseForm({ onAdd, isLoading, initialTransactionType =
     date: format(new Date(), 'yyyy-MM-dd')
   });
 
+  const [isSplitting, setIsSplitting] = useState(false);
+
   useEffect(() => {
     setFormData(prev => ({ ...prev, type: initialTransactionType }));
+    if (initialTransactionType !== 'Expense') {
+      setIsSplitting(false);
+    }
   }, [initialTransactionType]);
 
   const [aiGuessed, setAiGuessed] = useState(false);
@@ -54,6 +59,11 @@ export default function ExpenseForm({ onAdd, isLoading, initialTransactionType =
     e.preventDefault();
     if (!formData.amount || !formData.description || !formData.date) return;
     
+    if (isSplitting && formData.type === 'Expense') {
+      onProceedToSplit(formData);
+      return;
+    }
+
     await onAdd(formData);
     
     // Reset form after successful submission
@@ -64,6 +74,7 @@ export default function ExpenseForm({ onAdd, isLoading, initialTransactionType =
       category: 'Other',
       date: format(new Date(), 'yyyy-MM-dd')
     });
+    setIsSplitting(false);
   };
 
   const handleChange = (e) => {
@@ -209,6 +220,34 @@ export default function ExpenseForm({ onAdd, isLoading, initialTransactionType =
           />
         </div>
 
+        {/* Split Toggle */}
+        {formData.type === 'Expense' && (
+          <div className="flex items-center justify-between p-4 bg-surface-container-lowest border border-outline-variant/20 rounded-2xl mt-2">
+            <div className="flex flex-col">
+              <span className="font-semibold text-on-surface">Split this Expense</span>
+              <span className="text-xs text-on-surface-variant font-medium">Divide the cost with others</span>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isSplitting}
+              onClick={() => setIsSplitting(!isSplitting)}
+              className={cn(
+                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2",
+                isSplitting ? "bg-primary" : "bg-outline-variant/30"
+              )}
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                  isSplitting ? "translate-x-5" : "translate-x-0"
+                )}
+              />
+            </button>
+          </div>
+        )}
+
         <button 
           type="submit" 
           disabled={isLoading}
@@ -222,7 +261,7 @@ export default function ExpenseForm({ onAdd, isLoading, initialTransactionType =
           {isLoading ? (
             <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
-            formData.type === 'Expense' ? 'Add Expense' : 'Add Income'
+            formData.type === 'Expense' ? (isSplitting ? 'Continue to Split' : 'Add Expense') : 'Add Income'
           )}
         </button>
       </form>

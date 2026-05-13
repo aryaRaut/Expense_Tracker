@@ -45,14 +45,17 @@ def get_expenses():
         response = supabase.table("expenses").select("*").eq("user_id", user.id).order("date", desc=True).execute()
         expenses = []
         for e in response.data:
-            expenses.append({
+            expense_item = {
                 "id": str(e.get('id')),
                 "date": str(e.get('date'))[:10] if e.get('date') else '',
                 "type": e.get('type', 'Expense'),
                 "category": e.get('category'),
                 "description": e.get('description'),
                 "amount": e.get('amount')
-            })
+            }
+            if 'split_details' in e:
+                expense_item['split_details'] = e['split_details']
+            expenses.append(expense_item)
         return jsonify(expenses)
     except Exception as e:
         print("Error reading from Supabase:", e)
@@ -79,18 +82,24 @@ def add_expense():
         "amount": amount_val
     }
     
+    if 'split_details' in data:
+        expense_doc['split_details'] = data['split_details']
+    
     try:
         response = supabase.table("expenses").insert(expense_doc).execute()
         if len(response.data) > 0:
             e = response.data[0]
-            return jsonify({
+            expense_item = {
                 "id": str(e.get('id')),
                 "date": str(e.get('date'))[:10] if e.get('date') else '',
                 "type": e.get('type', 'Expense'),
                 "category": e.get('category'),
                 "description": e.get('description'),
                 "amount": e.get('amount')
-            })
+            }
+            if 'split_details' in e:
+                expense_item['split_details'] = e['split_details']
+            return jsonify(expense_item)
         return jsonify({"error": "Failed to insert"}), 500
     except Exception as e:
          print("Error writing to Supabase:", e)

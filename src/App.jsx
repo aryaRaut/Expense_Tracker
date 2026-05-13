@@ -3,6 +3,7 @@ import { fetchExpenses, addExpense, deleteExpense, fetchMetaData, updateMetaData
 import Dashboard from './components/Dashboard';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
+import SplitSettlement from './components/SplitSettlement';
 import { Activity, PlusCircle, LayoutDashboard, Wallet, Save, LogOut, Menu, X, Plus, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import Auth from './components/Auth';
 import { supabase } from './supabaseClient';
@@ -23,6 +24,7 @@ function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [initialTransactionType, setInitialTransactionType] = useState('Expense');
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [pendingSplitExpense, setPendingSplitExpense] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -98,7 +100,13 @@ function App() {
       showNotification('Failed to add transaction', 'error');
     } finally {
       setAdding(false);
+      setPendingSplitExpense(null);
     }
+  };
+
+  const handleProceedToSplit = (expenseData) => {
+    setPendingSplitExpense(expenseData);
+    setActiveTab('split');
   };
 
   const handleDeleteExpense = async (id) => {
@@ -250,8 +258,25 @@ function App() {
             </header>
             
             <div className="scale-[1.02] transform origin-top">
-              <ExpenseForm onAdd={handleAddExpense} isLoading={adding} initialTransactionType={initialTransactionType} />
+              <ExpenseForm 
+                onAdd={handleAddExpense} 
+                isLoading={adding} 
+                initialTransactionType={initialTransactionType} 
+                onProceedToSplit={handleProceedToSplit}
+              />
             </div>
+          </div>
+        ) : activeTab === 'split' && pendingSplitExpense ? (
+          <div className="animate-in fade-in duration-500">
+            <SplitSettlement 
+              expenseData={pendingSplitExpense}
+              onFinalize={handleAddExpense}
+              onCancel={() => {
+                setPendingSplitExpense(null);
+                setActiveTab('add');
+              }}
+              isLoading={adding}
+            />
           </div>
         ) : (
           <div className="animate-in fade-in duration-500 space-y-10">
