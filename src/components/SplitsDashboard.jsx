@@ -18,6 +18,7 @@ export default function SplitsDashboard() {
       const data = await fetchSplits();
       setSplits(data);
     } catch (err) {
+      console.error("Dashboard Load Error:", err);
       setError('Failed to load splits.');
     } finally {
       setLoading(false);
@@ -33,8 +34,7 @@ export default function SplitsDashboard() {
     } catch (err) {
       // Revert on failure
       setSplits(prev => prev.map(s => s.id === splitId ? { ...s, is_paid: currentStatus } : s));
-      // Ideally show a notification here
-      console.error(err);
+      console.error("Toggle Status Error:", err);
     }
   };
 
@@ -57,7 +57,12 @@ export default function SplitsDashboard() {
 
   const unpaidSplits = splits.filter(s => !s.is_paid);
   const paidSplits = splits.filter(s => s.is_paid);
-  const totalOwed = unpaidSplits.reduce((acc, curr) => acc + parseFloat(curr.amount || 0), 0);
+
+  // Logic to handle both possible database column names for the total calculation
+  const totalOwed = unpaidSplits.reduce((acc, curr) => {
+    const amount = curr.amount_owed || curr.amount || 0;
+    return acc + parseFloat(amount);
+  }, 0);
 
   return (
     <div className="max-w-4xl mx-auto animate-in fade-in duration-500">
@@ -127,7 +132,11 @@ export default function SplitsDashboard() {
 }
 
 function SplitCard({ split, onToggle }) {
-  const expenseDesc = split.expenses?.description || 'Unknown Expense';
+  // Map database names to UI variables
+  const displayName = split.friend_name || split.name || 'Unknown Friend';
+  const displayAmount = split.amount_owed || split.amount || 0;
+  
+  const expenseDesc = split.expenses?.description || 'Shared Expense';
   const expenseDate = split.expenses?.date ? new Date(split.expenses.date).toLocaleDateString() : '';
 
   return (
@@ -153,7 +162,7 @@ function SplitCard({ split, onToggle }) {
             "font-bold text-lg truncate",
             split.is_paid ? "text-on-surface-variant line-through" : "text-on-surface"
           )}>
-            {split.name}
+            {displayName}
           </p>
           <div className="flex items-center gap-3 text-xs text-on-surface-variant font-medium mt-1">
             <span className="flex items-center gap-1 truncate">
@@ -175,7 +184,7 @@ function SplitCard({ split, onToggle }) {
           "font-bold text-xl",
           split.is_paid ? "text-on-surface-variant" : "text-rose-600"
         )}>
-          ₹{parseFloat(split.amount).toFixed(2)}
+          ₹{parseFloat(displayAmount).toFixed(2)}
         </p>
       </div>
     </div>
