@@ -45,11 +45,15 @@ export const deleteExpense = async (id) => {
 export const fetchSplits = async () => {
   const userId = await getUserId();
   
-  // This JOIN is critical so the Dashboard can show the expense description
+  // UPDATED: Changed column names to match image_e9735f.png
   const { data, error } = await supabase
     .from('split_details')
     .select(`
-      *,
+      id,
+      name:friend_name,    /* Mapping friend_name to 'name' for the UI */
+      amount:amount_owed,  /* Mapping amount_owed to 'amount' for the UI */
+      is_paid,
+      created_at,
       expenses (
         description,
         date,
@@ -88,7 +92,7 @@ export const fetchMetaData = async () => {
     .eq('user_id', userId)
     .single();
 
-  if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows found"
+  if (error && error.code !== 'PGRST116') {
     console.error("Fetch meta error:", error);
   }
   return data || { startingBalance: 0 };
