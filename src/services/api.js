@@ -1,119 +1,107 @@
 import { supabase } from '../supabaseClient';
 
-const API_BASE = '/api';
-
-const getAuthHeaders = async (existingHeaders = {}) => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.access_token) {
-    return {
-      ...existingHeaders,
-      'Authorization': `Bearer ${session.access_token}`
-    };
-  }
-  return existingHeaders;
+// Helper to get current user ID
+const getUserId = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id;
 };
 
 export const fetchExpenses = async () => {
-  try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_BASE}/expenses`, { headers });
-    if (!response.ok) throw new Error('Failed to fetch expenses');
-    return await response.json();
-  } catch (error) {
+  const { data, error } = await supabase
+    .from('expenses')
+    .select('*')
+    .order('date', { ascending: false });
+  
+  if (error) {
     console.error("Fetch error:", error);
     return [];
   }
+  return data;
 };
 
 export const addExpense = async (expenseData) => {
-  try {
-    const headers = await getAuthHeaders({
-      'Content-Type': 'application/json',
-    });
-    const response = await fetch(`${API_BASE}/expenses`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(expenseData)
-    });
-    if (!response.ok) throw new Error('Failed to add expense');
-    return await response.json();
-  } catch (error) {
-    console.error("Add error:", error);
-    throw error;
-  }
+  const { data, error } = await supabase
+    .from('expenses')
+    .insert([expenseData])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
 export const deleteExpense = async (id) => {
-  try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_BASE}/expenses/${id}`, {
-      method: 'DELETE',
-      headers
-    });
-    if (!response.ok) throw new Error('Failed to delete expense');
-    return true;
-  } catch (error) {
-    console.error("Delete error:", error);
-    throw error;
-  }
+  const { error } = await supabase
+    .from('expenses')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+  return true;
 };
 
-export const fetchMetaData = async () => {
-  try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_BASE}/meta`, { headers });
-    if (!response.ok) throw new Error('Failed to fetch meta data');
-    return await response.json();
-  } catch (error) {
-    console.error("Fetch meta error:", error);
-    return { startingBalance: 0 };
-  }
-};
-
-export const updateMetaData = async (startingBalance) => {
-  try {
-    const headers = await getAuthHeaders({
-      'Content-Type': 'application/json',
-    });
-    const response = await fetch(`${API_BASE}/meta`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ startingBalance })
-    });
-    if (!response.ok) throw new Error('Failed to update meta data');
-    return await response.json();
-  } catch (error) {
-    console.error("Update meta error:", error);
-    throw error;
-  }
-};
+// --- SPLITS LOGIC ---
 
 export const fetchSplits = async () => {
-  try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_BASE}/splits`, { headers });
-    if (!response.ok) throw new Error('Failed to fetch splits');
-    return await response.json();
-  } catch (error) {
+  const userId = await getUserId();
+  
+  // This JOIN is critical so the Dashboard can show the expense description
+  const { data, error } = await supabase
+    .from('split_details')
+    .select(`
+      *,
+      expenses (
+        description,
+        date,
+        category
+      )
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
     console.error("Fetch splits error:", error);
     return [];
   }
+  return data;
 };
 
 export const updateSplitPaidStatus = async (splitId, isPaid) => {
-  try {
-    const headers = await getAuthHeaders({
-      'Content-Type': 'application/json',
-    });
-    const response = await fetch(`${API_BASE}/splits/${splitId}`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify({ is_paid: isPaid })
-    });
-    if (!response.ok) throw new Error('Failed to update split');
-    return await response.json();
-  } catch (error) {
-    console.error("Update split error:", error);
-    throw error;
+  const { data, error } = await supabase
+    .from('split_details')
+    .update({ is_paid: isPaid })
+    .eq('id', splitId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+// --- META DATA LOGIC ---
+
+export const fetchMetaData = async () => {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('user_meta')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows found"
+    console.error("Fetch meta error:", error);
   }
+  return data || { startingBalance: 0 };
+};
+
+export const updateMetaData = async (startingBalance) => {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('user_meta')
+    .upsert({ user_id: userId, startingBalance })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 };
