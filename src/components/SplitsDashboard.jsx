@@ -18,6 +18,7 @@ export default function SplitsDashboard() {
     try {
       const data = await fetchSplits();
       setSplits(data);
+      // Helpful for verifying the structure of the incoming data
       setDebugInfo({ count: data.length, firstItem: data[0] || 'No data' });
     } catch (err) {
       console.error("Dashboard Load Error:", err);
@@ -29,10 +30,13 @@ export default function SplitsDashboard() {
   };
 
   const handleTogglePaid = async (splitId, currentStatus) => {
+    // Optimistic Update
     setSplits(prev => prev.map(s => s.id === splitId ? { ...s, is_paid: !currentStatus } : s));
+    
     try {
       await updateSplitPaidStatus(splitId, !currentStatus);
     } catch (err) {
+      // Rollback on failure
       setSplits(prev => prev.map(s => s.id === splitId ? { ...s, is_paid: currentStatus } : s));
       console.error("Toggle Status Error:", err);
     }
@@ -49,9 +53,9 @@ export default function SplitsDashboard() {
   const unpaidSplits = splits.filter(s => !s.is_paid);
   const paidSplits = splits.filter(s => s.is_paid);
   
-  // Handlers for the database column naming mismatch confirmed in image_e9735f.png
+  // Directly using friend_name and amount_owed as per the database schema
   const totalOwed = unpaidSplits.reduce((acc, curr) => {
-    const amount = curr.amount_owed || curr.amount || 0;
+    const amount = curr.amount_owed || 0;
     return acc + parseFloat(amount);
   }, 0);
 
@@ -79,9 +83,9 @@ export default function SplitsDashboard() {
             <p className="text-on-surface-variant mt-2">Try adding a new expense with the "Lending" category.</p>
           </div>
           
-          {/* DEBUG SECTION - Remove this once fixed */}
-          <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-xs font-mono text-amber-800">
-            <p className="font-bold mb-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Debug Console:</p>
+          {/* Debug Panel - Shows raw data if the list is unexpectedly empty */}
+          <div className="bg-surface-container-low border border-outline-variant/20 p-4 rounded-xl text-[10px] font-mono text-on-surface-variant overflow-auto max-h-40">
+            <p className="font-bold mb-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> API State:</p>
             <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
           </div>
         </div>
@@ -121,9 +125,9 @@ export default function SplitsDashboard() {
 }
 
 function SplitCard({ split, onToggle }) {
-  // Mapping the confirmed names from image_e9735f.png
-  const displayName = split.friend_name || split.name || 'Unknown Friend';
-  const displayAmount = split.amount_owed || split.amount || 0;
+  // Using direct DB field names from the simplified API response
+  const displayName = split.friend_name || 'Unknown Friend';
+  const displayAmount = split.amount_owed || 0;
   
   const expenseDesc = split.expenses?.description || 'Shared Expense';
   const expenseDate = split.expenses?.date ? new Date(split.expenses.date).toLocaleDateString() : '';

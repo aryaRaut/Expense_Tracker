@@ -23,13 +23,12 @@ export const fetchExpenses = async () => {
   return data;
 };
 
-// FIX: Ensure user_id is included in the insert payload to avoid 400/403 errors
 export const addExpense = async (expenseData) => {
   const userId = await getUserId();
   
   const payload = {
     ...expenseData,
-    user_id: userId // Explicitly attach the owner ID
+    user_id: userId
   };
 
   const { data, error } = await supabase
@@ -59,27 +58,17 @@ export const deleteExpense = async (id) => {
 
 export const fetchSplits = async () => {
   const userId = await getUserId();
+  if (!userId) return [];
   
-  // Mapping columns for the UI while keeping DB names secure
+  // FIX: Removed aliases (name:) and forced a single-line string to prevent parsing errors
   const { data, error } = await supabase
     .from('split_details')
-    .select(`
-      id,
-      name:friend_name,
-      amount:amount_owed,
-      is_paid,
-      created_at,
-      expenses (
-        description,
-        date,
-        category
-      )
-    `)
+    .select('id,friend_name,amount_owed,is_paid,created_at,expenses(description,date,category)')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error("Fetch splits error:", error);
+    console.error("Fetch splits error:", error.message);
     return [];
   }
   return data;
