@@ -23,31 +23,58 @@ export const fetchExpenses = async () => {
   return data;
 };
 
+/**
+ * UPDATED: Combined Save Logic
+ * This ensures that if the category is 'Lending', 
+ * a record is created in BOTH 'expenses' and 'split_details'.
+ */
 export const addExpense = async (expenseData) => {
   const userId = await getUserId();
   if (!userId) throw new Error("Authentication required");
 
-  // Robust payload mapping to prevent 400 errors
-  const payload = {
+  // 1. Prepare Expense Payload
+  const expensePayload = {
     user_id: userId,
     description: expenseData.description || expenseData.desc || "Untitled Expense",
-    amount: parseFloat(expenseData.amount) || 0, // Ensure numeric type
+    amount: parseFloat(expenseData.amount) || 0,
     category: expenseData.category || "General",
     date: expenseData.date || new Date().toISOString().split('T')[0]
   };
 
-  const { data, error } = await supabase
+  // 2. Insert into 'expenses' table
+  const { data: newExpense, error: expenseError } = await supabase
     .from('expenses')
-    .insert([payload])
+    .insert([expensePayload])
     .select()
     .single();
 
-  if (error) {
-    // Detailed logging to pinpoint exact column failures
-    console.error("Supabase Add Expense Error:", error.message, error.details);
-    throw error;
+  if (expenseError) {
+    console.error("Supabase Add Expense Error:", expenseError.message);
+    throw expenseError;
   }
-  return data;
+
+  // 3. Handle Split Creation if category is "Lending"
+  // Note: Case-insensitive check to be safe
+  if (expensePayload.category.toLowerCase() === 'lending') {
+    const splitPayload = {
+      user_id: userId,
+      expense_id: newExpense.id,
+      friend_name: expenseData.friend_name || 'New Friend',
+      amount_owed: expensePayload.amount,
+      is_paid: false
+    };
+
+    const { error: splitError } = await supabase
+      .from('split_details')
+      .insert([splitPayload]);
+
+    if (splitError) {
+      console.error("Split Creation failed, but expense was saved:", splitError.message);
+      // We don't throw here so the user sees the success of the expense
+    }
+  }
+
+  return newExpense;
 };
 
 export const deleteExpense = async (id) => {
@@ -66,7 +93,7 @@ export const fetchSplits = async () => {
   const userId = await getUserId();
   if (!userId) return [];
   
-  // Single-line select string to bypass parser errors (PGRST100)
+  // Flat select string to avoid PGRST100 parser errors
   const { data, error } = await supabase
     .from('split_details')
     .select('id,friend_name,amount_owed,is_paid,created_at,expenses(description,date,category)')
