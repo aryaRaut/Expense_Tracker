@@ -111,14 +111,20 @@ function App() {
   };
 
   const handleDeleteExpense = async (id) => {
-    try {
-      await deleteExpense(id);
-      setExpenses(expenses.filter(e => e.id !== id));
-      showNotification('Transaction deleted', 'success');
-    } catch (err) {
-      showNotification('Failed to delete transaction', 'error');
+  try {
+    await deleteExpense(id);
+    setExpenses(expenses.filter(e => e.id !== id));
+    showNotification('Transaction deleted', 'success');
+    // If splits dashboard is open, it will auto-refresh on next load
+    // Force it by resetting the tab if currently on splits
+    if (activeTab === 'splits') {
+      setActiveTab('dashboard');
+      setTimeout(() => setActiveTab('splits'), 100);
     }
-  };
+  } catch (err) {
+    showNotification('Failed to delete transaction', 'error');
+  }
+};
 
   const showNotification = (message, type) => {
     setNotification({ message, type });

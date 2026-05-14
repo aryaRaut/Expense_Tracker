@@ -11,11 +11,14 @@ const getUserId = async () => {
 };
 
 export const fetchExpenses = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
   const { data, error } = await supabase
     .from('expenses')
     .select('*')
+    .eq('user_id', user.id) // ← add this line
     .order('date', { ascending: false });
-  
+
   if (error) {
     console.error("Fetch error:", error);
     return [];
@@ -46,17 +49,13 @@ export const addExpense = async (expenseData) => {
     .select()
     .single();
 
-  if (expenseError) {
-    console.error("Expense insert failed:", expenseError.message);
-    throw expenseError;
-  }
+  if (expenseError) throw expenseError;
 
-  console.log("Expense saved:", newExpense);
-
+  // Insert splits if ANY category has split_details attached
+  const hasSplits = expenseData.split_details?.length > 0;
   const isLending = expensePayload.category.toLowerCase().includes('lending');
-  console.log("Is lending category?", isLending, "| Category was:", expensePayload.category);
 
-  if (isLending) {
+  if (hasSplits || isLending) {
     const splits = expenseData.split_details?.length > 0
       ? expenseData.split_details
       : [{ name: expenseData.friend_name || 'Friend', amount: expensePayload.amount, paid: false }];
@@ -69,30 +68,29 @@ export const addExpense = async (expenseData) => {
       is_paid: split.paid || split.is_paid || false,
     }));
 
-    console.log("Attempting split insert:", splitRows);
-
-    const { data: splitData, error: splitError } = await supabase
+    const { error: splitError } = await supabase
       .from('split_details')
-      .insert(splitRows)
-      .select();
+      .insert(splitRows);
 
-    if (splitError) {
-      console.error("Split insert FAILED:", splitError.message, splitError.code, splitError.details);
-    } else {
-      console.log("Split insert SUCCESS:", splitData);
-    }
+    if (splitError) console.error("Split insert failed:", splitError.message);
   }
 
   return newExpense;
 };
 
 export const deleteExpense = async (id) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
   const { error } = await supabase
     .from('expenses')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', user.id); // ← add this line
 
-  if (error) throw error;
+  if (error) {
+    console.error("Delete failed:", error.message);
+    throw error;
+  }
   return true;
 };
 
