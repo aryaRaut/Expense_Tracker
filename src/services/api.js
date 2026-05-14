@@ -1,70 +1,168 @@
-const API_URL = 'http://localhost:5000/api/expenses';
+import { supabase } from '../supabaseClient';
+
+// Helper to get current user ID reliably
+const getUserId = async () => {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    console.error("User not authenticated");
+    return null;
+  }
+  return user.id;
+};
 
 export const fetchExpenses = async () => {
-  try {
-    const response = await fetch(API_URL);
-    if (!response.ok) throw new Error('Failed to fetch expenses');
-    return await response.json();
-  } catch (error) {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  const { data, error } = await supabase
+    .from('expenses')
+    .select('*')
+    .eq('user_id', user.id) // ← add this line
+    .order('date', { ascending: false });
+
+  if (error) {
     console.error("Fetch error:", error);
     return [];
   }
+  return data;
 };
 
+/**
+ * UPDATED: Combined Save Logic
+ * This ensures that if the category is 'Lending', 
+ * a record is created in BOTH 'expenses' and 'split_details'.
+ */
 export const addExpense = async (expenseData) => {
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(expenseData)
-    });
-    if (!response.ok) throw new Error('Failed to add expense');
-    return await response.json();
-  } catch (error) {
-    console.error("Add error:", error);
-    throw error;
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
+
+  const expensePayload = {
+    user_id: user.id,
+    description: expenseData.description || expenseData.desc || "Untitled",
+    amount: parseFloat(expenseData.amount) || 0,
+    category: expenseData.category || "Other",
+    date: expenseData.date || new Date().toISOString().split('T')[0],
+  };
+
+  const { data: newExpense, error: expenseError } = await supabase
+    .from('expenses')
+    .insert([expensePayload])
+    .select()
+    .single();
+
+  if (expenseError) throw expenseError;
+
+  // Insert splits if ANY category has split_details attached
+  const hasSplits = expenseData.split_details?.length > 0;
+  const isLending = expensePayload.category.toLowerCase().includes('lending');
+
+  if (hasSplits || isLending) {
+    const splits = expenseData.split_details?.length > 0
+      ? expenseData.split_details
+      : [{ name: expenseData.friend_name || 'Friend', amount: expensePayload.amount, paid: false }];
+
+    const splitRows = splits.map(split => ({
+      user_id: user.id,
+      expense_id: newExpense.id,
+      friend_name: split.name || split.friend_name || 'Unknown',
+      amount_owed: parseFloat(split.amount) || 0,
+      is_paid: split.paid || split.is_paid || false,
+    }));
+
+    const { error: splitError } = await supabase
+      .from('split_details')
+      .insert(splitRows);
+
+    if (splitError) console.error("Split insert failed:", splitError.message);
   }
+
+  return newExpense;
 };
 
 export const deleteExpense = async (id) => {
-  try {
-    const response = await fetch(`${API_URL}/${id}`, {
-      method: 'DELETE'
-    });
-    if (!response.ok) throw new Error('Failed to delete expense');
-    return true;
-  } catch (error) {
-    console.error("Delete error:", error);
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  const { error } = await supabase
+    .from('expenses')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id); // ← add this line
+
+  if (error) {
+    console.error("Delete failed:", error.message);
     throw error;
   }
+  return true;
 };
 
-export const fetchMetaData = async () => {
-  try {
-    const response = await fetch('http://localhost:5000/api/meta');
-    if (!response.ok) throw new Error('Failed to fetch meta data');
-    return await response.json();
-  } catch (error) {
-    console.error("Fetch meta error:", error);
-    return { startingBalance: 0 };
+// --- SPLITS LOGIC ---
+
+export const fetchSplits = async () => {
+  const userId = await getUserId();
+  if (!userId) return [];
+  
+  // Flat select string to avoid PGRST100 parser errors
+  const { data, error } = await supabase
+    .from('split_details')
+    .select('id,friend_name,amount_owed,is_paid,created_at,expenses(description,date,category)')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error("Fetch splits error:", error.message);
+    return [];
   }
+  return data;
+};
+
+export const updateSplitPaidStatus = async (splitId, isPaid) => {
+  const { data, error } = await supabase
+    .from('split_details')
+    .update({ is_paid: isPaid })
+    .eq('id', splitId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Update split error:", error);
+    throw error;
+  }
+  return data;
+};
+
+// --- META DATA LOGIC ---
+
+export const fetchMetaData = async () => {
+  const userId = await getUserId();
+  
+  const { data, error } = await supabase
+    .from('user_meta')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    console.error("Fetch meta error:", error);
+  }
+  
+  // Map snake_case DB column back to camelCase for the app
+  return { startingBalance: data?.starting_balance || 0 };
 };
 
 export const updateMetaData = async (startingBalance) => {
-  try {
-    const response = await fetch('http://localhost:5000/api/meta', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ startingBalance })
-    });
-    if (!response.ok) throw new Error('Failed to update meta data');
-    return await response.json();
-  } catch (error) {
+  const userId = await getUserId();
+  
+  const { data, error } = await supabase
+    .from('user_meta')
+    .upsert({ 
+      user_id: userId, 
+      starting_balance: startingBalance  // ← snake_case to match DB
+    })
+    .select()
+    .single();
+
+  if (error) {
     console.error("Update meta error:", error);
     throw error;
   }
+  return data;
 };

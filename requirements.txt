@@ -1,4 +1,4 @@
 Flask
 flask-cors
-pandas
-openpyxl
+supabase
+python-dotenv

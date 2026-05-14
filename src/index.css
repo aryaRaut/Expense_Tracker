@@ -4,7 +4,10 @@
 
 @layer utilities {
   .glass-effect {
-    @apply bg-surface/70 backdrop-blur-[20px] saturate-200 shadow-ambient border border-outline-variant/15;
+    @apply bg-white/40 backdrop-blur-xl border border-white/50 shadow-ambient;
+  }
+  .glass-effect-dark {
+    @apply bg-surface-container-low/60 backdrop-blur-xl border border-white/30 shadow-ambient;
   }
 }
 
