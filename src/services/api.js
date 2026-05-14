@@ -29,11 +29,9 @@ export const fetchExpenses = async () => {
  * a record is created in BOTH 'expenses' and 'split_details'.
  */
 export const addExpense = async (expenseData) => {
-  // 1. Get authenticated user
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) throw new Error("Not authenticated");
 
-  // 2. Build and insert the expense
   const expensePayload = {
     user_id: user.id,
     description: expenseData.description || expenseData.desc || "Untitled",
@@ -53,15 +51,18 @@ export const addExpense = async (expenseData) => {
     throw expenseError;
   }
 
-  // 3. If category is Lending, insert into split_details
+  console.log("✅ Expense saved:", newExpense);
+  console.log("Category value:", JSON.stringify(expensePayload.category));
+
   const isLending = expensePayload.category.toLowerCase().includes('lending');
+  console.log("Is lending?", isLending);
 
   if (isLending) {
-    // Handle both the SplitSettlement flow (split_details array)
-    // and the simple single-person lending flow
     const splits = expenseData.split_details?.length > 0
       ? expenseData.split_details
       : [{ name: expenseData.friend_name || 'Friend', amount: expensePayload.amount, paid: false }];
+
+    console.log("Split rows to insert:", splits);
 
     const splitRows = splits.map(split => ({
       user_id: user.id,
@@ -71,14 +72,17 @@ export const addExpense = async (expenseData) => {
       is_paid: split.paid || split.is_paid || false,
     }));
 
-    const { error: splitError } = await supabase
+    console.log("Inserting into split_details:", splitRows);
+
+    const { data: splitData, error: splitError } = await supabase
       .from('split_details')
-      .insert(splitRows);
+      .insert(splitRows)
+      .select();  // ← add .select() so you can see what was actually inserted
 
     if (splitError) {
-      console.error("Split insert failed:", splitError.message, splitError.code);
-      // Don't throw — expense is saved. But surface the error so you know.
-      // Remove this return if you want a hard failure instead.
+      console.error("❌ Split insert failed:", splitError.message, "Code:", splitError.code, "Details:", splitError.details);
+    } else {
+      console.log("✅ Split rows inserted:", splitData);
     }
   }
 
