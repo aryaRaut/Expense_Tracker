@@ -105,7 +105,7 @@ export const fetchSplits = async () => {
   // Flat select string to avoid PGRST100 parser errors
   const { data, error } = await supabase
     .from('split_details')
-    .select('id,friend_name,amount,is_paid,created_at,expenses(description,date,category)')
+    .select('id,friend_name,amount_owed,is_paid,created_at,expenses(description,date,category)')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
