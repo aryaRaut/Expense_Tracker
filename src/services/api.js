@@ -68,7 +68,7 @@ export const addExpense = async (expenseData) => {
       user_id: user.id,
       expense_id: newExpense.id,
       friend_name: split.name || split.friend_name || 'Unknown',
-      amount_owed: parseFloat(split.amount) || 0,
+      amount: parseFloat(split.amount) || 0,
       is_paid: split.paid || split.is_paid || false,
     }));
 
@@ -108,7 +108,7 @@ export const fetchSplits = async () => {
   // Flat select string to avoid PGRST100 parser errors
   const { data, error } = await supabase
     .from('split_details')
-    .select('id,friend_name,amount_owed,is_paid,created_at,expenses(description,date,category)')
+    .select('id,friend_name,amount,is_paid,created_at,expenses(description,date,category)')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
