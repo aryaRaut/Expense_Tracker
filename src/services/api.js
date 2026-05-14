@@ -51,38 +51,35 @@ export const addExpense = async (expenseData) => {
     throw expenseError;
   }
 
-  console.log("✅ Expense saved:", newExpense);
-  console.log("Category value:", JSON.stringify(expensePayload.category));
+  console.log("Expense saved:", newExpense);
 
   const isLending = expensePayload.category.toLowerCase().includes('lending');
-  console.log("Is lending?", isLending);
+  console.log("Is lending category?", isLending, "| Category was:", expensePayload.category);
 
   if (isLending) {
     const splits = expenseData.split_details?.length > 0
       ? expenseData.split_details
       : [{ name: expenseData.friend_name || 'Friend', amount: expensePayload.amount, paid: false }];
 
-    console.log("Split rows to insert:", splits);
-
     const splitRows = splits.map(split => ({
       user_id: user.id,
       expense_id: newExpense.id,
       friend_name: split.name || split.friend_name || 'Unknown',
-      amount: parseFloat(split.amount) || 0,
+      amount_owed: parseFloat(split.amount) || 0,
       is_paid: split.paid || split.is_paid || false,
     }));
 
-    console.log("Inserting into split_details:", splitRows);
+    console.log("Attempting split insert:", splitRows);
 
     const { data: splitData, error: splitError } = await supabase
       .from('split_details')
       .insert(splitRows)
-      .select();  // ← add .select() so you can see what was actually inserted
+      .select();
 
     if (splitError) {
-      console.error("❌ Split insert failed:", splitError.message, "Code:", splitError.code, "Details:", splitError.details);
+      console.error("Split insert FAILED:", splitError.message, splitError.code, splitError.details);
     } else {
-      console.log("✅ Split rows inserted:", splitData);
+      console.log("Split insert SUCCESS:", splitData);
     }
   }
 
