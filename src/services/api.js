@@ -133,6 +133,7 @@ export const updateSplitPaidStatus = async (splitId, isPaid) => {
 
 export const fetchMetaData = async () => {
   const userId = await getUserId();
+  
   const { data, error } = await supabase
     .from('user_meta')
     .select('*')
@@ -142,14 +143,20 @@ export const fetchMetaData = async () => {
   if (error && error.code !== 'PGRST116') {
     console.error("Fetch meta error:", error);
   }
-  return data || { startingBalance: 0 };
+  
+  // Map snake_case DB column back to camelCase for the app
+  return { startingBalance: data?.starting_balance || 0 };
 };
 
 export const updateMetaData = async (startingBalance) => {
   const userId = await getUserId();
+  
   const { data, error } = await supabase
     .from('user_meta')
-    .upsert({ user_id: userId, startingBalance })
+    .upsert({ 
+      user_id: userId, 
+      starting_balance: startingBalance  // ← snake_case to match DB
+    })
     .select()
     .single();
 
