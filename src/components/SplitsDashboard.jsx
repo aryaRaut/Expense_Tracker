@@ -13,23 +13,21 @@ export default function SplitsDashboard() {
     loadSplits();
   }, []);
 
-  const loadSplits = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchSplits();
-      setSplits(data);
-      // Helpful for verifying the structure of the incoming data
-      setDebugInfo({ count: data.length, firstItem: data[0] || 'No data' });
-      const data = await fetchSplits();
-      console.log("Raw splits from DB:", JSON.stringify(data, null, 2));
-    } catch (err) {
-      console.error("Dashboard Load Error:", err);
-      setError('Failed to load splits.');
-      setDebugInfo({ error: err.message });
-    } finally {
-      setLoading(false);
-    }
-  };
+const loadSplits = async () => {
+  setLoading(true);
+  try {
+    const data = await fetchSplits();                              // ← declare first
+    console.log("Raw splits from DB:", JSON.stringify(data, null, 2));
+    setSplits(data);
+    setDebugInfo({ count: data.length, firstItem: data[0] || 'No data' }); // ← use after
+  } catch (err) {
+    console.error("Dashboard Load Error:", err);
+    setError('Failed to load splits.');
+    setDebugInfo({ error: err.message });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleTogglePaid = async (splitId, currentStatus) => {
     // Optimistic Update
