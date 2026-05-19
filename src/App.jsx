@@ -338,31 +338,31 @@ function App() {
           </div>
         )}
         ) : activeTab === 'transfers' ? (
-  <div className="max-w-2xl mx-auto animate-in fade-in duration-500 space-y-8">
-    <header>
-      <h2 className="text-3xl font-manrope font-extrabold tracking-tight flex items-center gap-3">
-        <MoveRight className="w-7 h-7 text-primary" />
-        Transfers
-      </h2>
-      <p className="text-on-surface-variant mt-2">
-        Move money between your accounts without affecting your net worth.
-      </p>
-    </header>
+          <div className="max-w-2xl mx-auto animate-in fade-in duration-500 space-y-8">
+            <header>
+              <h2 className="text-3xl font-manrope font-extrabold tracking-tight flex items-center gap-3">
+                <MoveRight className="w-7 h-7 text-primary" />
+                  Transfers
+              </h2>
+              <p className="text-on-surface-variant mt-2">
+                Move money between your accounts without affecting your net worth.
+              </p>
+            </header>
  
-    {/* Transfer Form */}
-    <TransferForm
-      onSuccess={handleTransferSuccess}
-      onCancel={() => setActiveTab('dashboard')}
-    />
+            {/* Transfer Form */}
+            <TransferForm
+              onSuccess={handleTransferSuccess}
+              onCancel={() => setActiveTab('dashboard')}
+            />
  
-    {/* Divider */}
-    <div className="flex items-center gap-4">
-      <div className="flex-1 border-t border-outline-variant/20" />
-      <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
-        Transfer History
-      </span>
-      <div className="flex-1 border-t border-outline-variant/20" />
-    </div>
+            {/* Divider */}
+          <div className="flex items-center gap-4">
+            <div className="flex-1 border-t border-outline-variant/20" />
+            <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
+              Transfer History
+            </span>
+            <div className="flex-1 border-t border-outline-variant/20" />
+          </div>
  
     {/* Transfer History List */}
     <TransferList refreshTrigger={transferRefresh} />
