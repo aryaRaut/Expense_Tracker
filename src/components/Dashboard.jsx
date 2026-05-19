@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
 import { format, parseISO, subDays, isSameMonth } from 'date-fns';
-import { TrendingUp, Wallet, ArrowDownRight, TrendingDown, AlertTriangle, Sun, CloudSun, CloudLightning } from 'lucide-react';
+import { TrendingUp, Wallet, ArrowDownRight, TrendingDown, AlertTriangle, Sun, CloudSun, CloudLightning, Receipt } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 const COLORS = ['#3525cd', '#006c49', '#4f46e5', '#6cf8bb', '#1b1b24'];
 
 export default function Dashboard({ expenses, startingBalance = 0, netWorthUpdated = false }) {
-  const { totalExpenses, totalIncome, monthlyIncome, monthlyExpense } = useMemo(() => {
+  const { totalExpenses, totalIncome, monthlyIncome, monthlyExpense, txCount } = useMemo(() => {
     let tExp = 0;
     let tInc = 0;
     let mInc = 0;
@@ -26,7 +26,8 @@ export default function Dashboard({ expenses, startingBalance = 0, netWorthUpdat
         if (isCurrentMonth) mExp += amt;
       }
     });
-    return { totalExpenses: tExp, totalIncome: tInc, monthlyIncome: mInc, monthlyExpense: mExp };
+    const txCount = expenses.length;
+    return { totalExpenses: tExp, totalIncome: tInc, monthlyIncome: mInc, monthlyExpense: mExp, txCount };
   }, [expenses]);
 
   const netWorth = startingBalance + totalIncome - totalExpenses;
@@ -131,6 +132,16 @@ export default function Dashboard({ expenses, startingBalance = 0, netWorthUpdat
           <h3 className="text-4xl lg:text-5xl font-manrope font-bold">₹{totalExpenses.toFixed(2)}</h3>
         </div>
       </div>
+        
+        {/* Card D: Total Transactions */}
+        <div className="bg-gradient-to-br from-sky-500 to-cyan-600 p-8 rounded-3xl shadow-ambient text-white relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mx-10 -my-10 group-hover:scale-110 transition-transform duration-500"></div>
+            <p className="text-sky-100 text-sm font-semibold uppercase tracking-wider mb-2 flex items-center gap-2">
+              <Receipt className="w-4 h-4" /> Transactions
+            </p>
+            <h3 className="text-4xl lg:text-5xl font-manrope font-bold">{txCount}</h3>
+            <p className="text-sky-200 text-sm font-medium mt-2">total recorded</p>
+        </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
