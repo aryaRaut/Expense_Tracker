@@ -9,6 +9,8 @@ import { Activity, PlusCircle, LayoutDashboard, Wallet, Save, LogOut, Menu, X, P
 import Auth from './components/Auth';
 import { supabase } from './supabaseClient';
 import AccountSettings from './components/AccountSettings';
+import TransferForm from './components/TransferForm';
+import TransferList from './components/TransferList';
 
 function App() {
   const [expenses, setExpenses] = useState([]);
@@ -27,6 +29,8 @@ function App() {
   const [initialTransactionType, setInitialTransactionType] = useState('Expense');
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [pendingSplitExpense, setPendingSplitExpense] = useState(null);
+
+  const [transferRefresh, setTransferRefresh] = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -127,6 +131,12 @@ function App() {
   }
 };
 
+  const handleTransferSuccess = (transfer) => {
+  showNotification('Transfer recorded successfully!', 'success');
+  setTransferRefresh((n) => n + 1);   // triggers TransferList to reload
+  setActiveTab('transfers');           // go to transfers list after saving
+};
+
   const showNotification = (message, type) => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
@@ -189,6 +199,12 @@ function App() {
           >
             <Users className="w-5 h-5" />
             Splits
+          </button>
+          <button
+              onClick={() => { setActiveTab('transfers'); setIsMobileMenuOpen(false); }}
+              className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'transfers' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}>
+              <MoveRight className="w-5 h-5" />
+                Transfers
           </button>
           <button 
             onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }} 
@@ -321,6 +337,36 @@ function App() {
             </div>
           </div>
         )}
+        ) : activeTab === 'transfers' ? (
+  <div className="max-w-2xl mx-auto animate-in fade-in duration-500 space-y-8">
+    <header>
+      <h2 className="text-3xl font-manrope font-extrabold tracking-tight flex items-center gap-3">
+        <MoveRight className="w-7 h-7 text-primary" />
+        Transfers
+      </h2>
+      <p className="text-on-surface-variant mt-2">
+        Move money between your accounts without affecting your net worth.
+      </p>
+    </header>
+ 
+    {/* Transfer Form */}
+    <TransferForm
+      onSuccess={handleTransferSuccess}
+      onCancel={() => setActiveTab('dashboard')}
+    />
+ 
+    {/* Divider */}
+    <div className="flex items-center gap-4">
+      <div className="flex-1 border-t border-outline-variant/20" />
+      <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
+        Transfer History
+      </span>
+      <div className="flex-1 border-t border-outline-variant/20" />
+    </div>
+ 
+    {/* Transfer History List */}
+    <TransferList refreshTrigger={transferRefresh} />
+  </div>
       </main>
 
       {/* Mobile Bottom Navigation */}
@@ -370,6 +416,14 @@ function App() {
           >
             <Users className="w-6 h-6" />
             <span className="text-[10px] font-semibold">Splits</span>
+          </button>
+          
+          <button
+            onClick={() => { setActiveTab('transfers'); setShowAddMenu(false); }}
+            className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'transfers' ? 'text-primary' : 'text-on-surface-variant'}`}
+            >
+            <MoveRight className="w-6 h-6" />
+            <span className="text-[10px] font-semibold">Transfers</span>
           </button>
 
           <button 
