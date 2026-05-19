@@ -8,6 +8,7 @@ import SplitsDashboard from './components/SplitsDashboard';
 import { Activity, PlusCircle, LayoutDashboard, Wallet, Save, LogOut, Menu, X, Plus, ArrowUpCircle, ArrowDownCircle, Users } from 'lucide-react';
 import Auth from './components/Auth';
 import { supabase } from './supabaseClient';
+import AccountSettings from './components/AccountSettings';
 
 function App() {
   const [expenses, setExpenses] = useState([]);
@@ -221,49 +222,61 @@ function App() {
           <div className="flex justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
           </div>
-        ) : activeTab === 'settings' ? (
-          <div className="max-w-2xl animate-in slide-in-from-bottom-4 fade-in duration-500">
-            <header className="mb-8">
-              <h2 className="text-3xl font-manrope font-extrabold tracking-tight">Account Settings</h2>
-              <p className="text-on-surface-variant mt-2">Manage your financial baseline and configuration.</p>
-            </header>
-
-            <div className="bg-surface-container-lowest p-10 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-surface-container-high">
-              <h3 className="text-xl font-manrope font-semibold text-on-surface flex items-center gap-2 mb-6">
-                <Wallet className="w-5 h-5 text-primary" />
-                Update Net Worth
-              </h3>
-              <p className="text-sm text-on-surface-variant mb-8 leading-relaxed">
-                Enter your exact current bank balance or total net worth today. We will recalculate your underlying financial baseline so your history remains perfectly intact and future transactions continue tracking from this new point.
-              </p>
-
-              <form onSubmit={handleUpdateNetWorth} className="space-y-6">
-                <div>
-                  <label className="block text-label-sm uppercase tracking-wide text-on-surface-variant font-medium mb-2">Current Bank Balance / Net Worth</label>
-                  <div className="relative">
-                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface-variant font-semibold text-lg">₹</span>
-                    <input 
-                      type="number" 
-                      step="0.01"
-                      required
-                      value={targetBalance}
-                      onChange={(e) => setTargetBalance(e.target.value)}
-                      className="w-full bg-surface-container-low text-on-surface rounded-2xl py-4 pl-10 pr-4 text-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow appearance-none font-semibold text-primary"
-                      placeholder="50000.00"
-                    />
-                  </div>
-                </div>
-
-                <button 
-                  type="submit" 
-                  className="mt-6 w-full bg-gradient-to-br from-primary to-primary-container hover:from-primary/90 hover:to-primary text-white font-bold py-4 rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98] flex justify-center items-center gap-2"
-                >
-                  <Save className="w-5 h-5" />
-                  Update Balance
-                </button>
-              </form>
-            </div>
+) : activeTab === 'settings' ? (
+  <div className="max-w-2xl animate-in slide-in-from-bottom-4 fade-in duration-500 space-y-10">
+    <header className="mb-2">
+      <h2 className="text-3xl font-manrope font-extrabold tracking-tight">Account Settings</h2>
+      <p className="text-on-surface-variant mt-2">Manage your accounts and financial baseline.</p>
+    </header>
+ 
+    {/* ── Bank Accounts Section ── */}
+    <AccountSettings onAccountsChanged={(updatedAccounts) => {
+      // optional: you can use this later when wiring account switcher
+      console.log('Accounts updated:', updatedAccounts);
+    }} />
+ 
+    {/* ── Divider ── */}
+    <div className="border-t border-outline-variant/20" />
+ 
+    {/* ── Net Worth Update (existing) ── */}
+    <div className="bg-surface-container-lowest p-10 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-surface-container-high">
+      <h3 className="text-xl font-manrope font-semibold text-on-surface flex items-center gap-2 mb-6">
+        <Wallet className="w-5 h-5 text-primary" />
+        Update Net Worth
+      </h3>
+      <p className="text-sm text-on-surface-variant mb-8 leading-relaxed">
+        Enter your exact current bank balance or total net worth today. We will recalculate your underlying financial baseline so your history remains perfectly intact and future transactions continue tracking from this new point.
+      </p>
+ 
+      <form onSubmit={handleUpdateNetWorth} className="space-y-6">
+        <div>
+          <label className="block text-label-sm uppercase tracking-wide text-on-surface-variant font-medium mb-2">
+            Current Bank Balance / Net Worth
+          </label>
+          <div className="relative">
+            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface-variant font-semibold text-lg">₹</span>
+            <input
+              type="number"
+              step="0.01"
+              required
+              value={targetBalance}
+              onChange={(e) => setTargetBalance(e.target.value)}
+              className="w-full bg-surface-container-low text-on-surface rounded-2xl py-4 pl-10 pr-4 text-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow appearance-none font-semibold text-primary"
+              placeholder="50000.00"
+            />
           </div>
+        </div>
+ 
+        <button
+          type="submit"
+          className="mt-6 w-full bg-gradient-to-br from-primary to-primary-container hover:from-primary/90 hover:to-primary text-white font-bold py-4 rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98] flex justify-center items-center gap-2"
+        >
+          <Save className="w-5 h-5" />
+          Update Balance
+        </button>
+      </form>
+    </div>
+  </div>
         ) : activeTab === 'add' ? (
           <div className="max-w-2xl mx-auto animate-in slide-in-from-bottom-4 fade-in duration-500">
             <header className="mb-8">
