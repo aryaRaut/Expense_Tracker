@@ -5,7 +5,7 @@ import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
 import SplitSettlement from './components/SplitSettlement';
 import SplitsDashboard from './components/SplitsDashboard';
-import { Activity, PlusCircle, LayoutDashboard, Wallet, Save, LogOut, Menu, X, Plus, ArrowUpCircle, ArrowDownCircle, Users } from 'lucide-react';
+import { Activity, PlusCircle, LayoutDashboard, Wallet, Save, LogOut, Menu, X, Plus, ArrowUpCircle, ArrowDownCircle, Users, MoveRight } from 'lucide-react';
 import Auth from './components/Auth';
 import { supabase } from './supabaseClient';
 import AccountSettings from './components/AccountSettings';
