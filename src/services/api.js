@@ -31,16 +31,23 @@ export const fetchExpenses = async () => {
  * This ensures that if the category is 'Lending', 
  * a record is created in BOTH 'expenses' and 'split_details'.
  */
+// ─────────────────────────────────────────────────────────────
+// In src/services/api.js
+// REPLACE the entire addExpense function with this:
+// ─────────────────────────────────────────────────────────────
+
 export const addExpense = async (expenseData) => {
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) throw new Error("Not authenticated");
+  const userId = await getUserId();
+  if (!userId) throw new Error("Authentication required");
 
   const expensePayload = {
-    user_id: user.id,
-    description: expenseData.description || expenseData.desc || "Untitled",
+    user_id: userId,
+    description: expenseData.description || expenseData.desc || "Untitled Expense",
     amount: parseFloat(expenseData.amount) || 0,
-    category: expenseData.category || "Other",
+    category: expenseData.category || "General",
     date: expenseData.date || new Date().toISOString().split('T')[0],
+    // ── NEW: attach account_id if provided ──
+    account_id: expenseData.account_id || null,
   };
 
   const { data: newExpense, error: expenseError } = await supabase
@@ -49,30 +56,29 @@ export const addExpense = async (expenseData) => {
     .select()
     .single();
 
-  if (expenseError) throw expenseError;
+  if (expenseError) {
+    console.error("Supabase Add Expense Error:", expenseError.message);
+    throw expenseError;
+  }
 
-  // Insert splits if ANY category has split_details attached
-  const hasSplits = expenseData.split_details?.length > 0;
-  const isLending = expensePayload.category.toLowerCase().includes('lending');
-
-  if (hasSplits || isLending) {
-    const splits = expenseData.split_details?.length > 0
-      ? expenseData.split_details
-      : [{ name: expenseData.friend_name || 'Friend', amount: expensePayload.amount, paid: false }];
-
-    const splitRows = splits.map(split => ({
-      user_id: user.id,
+  // Handle Lending/Friends split creation
+  if (expensePayload.category.toLowerCase() === 'lending/friends' ||
+      expensePayload.category.toLowerCase() === 'lending') {
+    const splitPayload = {
+      user_id: userId,
       expense_id: newExpense.id,
-      friend_name: split.name || split.friend_name || 'Unknown',
-      amount_owed: parseFloat(split.amount) || 0,
-      is_paid: split.paid || split.is_paid || false,
-    }));
+      friend_name: expenseData.friend_name || 'New Friend',
+      amount_owed: expensePayload.amount,
+      is_paid: false,
+    };
 
     const { error: splitError } = await supabase
       .from('split_details')
-      .insert(splitRows);
+      .insert([splitPayload]);
 
-    if (splitError) console.error("Split insert failed:", splitError.message);
+    if (splitError) {
+      console.error("Split Creation failed, but expense was saved:", splitError.message);
+    }
   }
 
   return newExpense;
