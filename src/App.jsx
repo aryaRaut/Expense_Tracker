@@ -29,7 +29,6 @@ function App() {
   const [initialTransactionType, setInitialTransactionType] = useState('Expense');
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [pendingSplitExpense, setPendingSplitExpense] = useState(null);
-
   const [transferRefresh, setTransferRefresh] = useState(0);
 
   useEffect(() => {
@@ -38,9 +37,7 @@ function App() {
       setAuthInitialized(true);
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
@@ -48,9 +45,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (session) {
-      loadData();
-    }
+    if (session) loadData();
   }, [session]);
 
   const loadData = async () => {
@@ -74,20 +69,14 @@ function App() {
     if (!targetBalance) return;
     try {
       const target = parseFloat(targetBalance);
-      // Dynamic Rebasing Math
       const tInc = expenses.filter(ex => ex.type === 'Income').reduce((acc, curr) => acc + Number(curr.amount), 0);
       const tExp = expenses.filter(ex => ex.type !== 'Income').reduce((acc, curr) => acc + Number(curr.amount), 0);
-      
       const newBase = target - tInc + tExp;
-      
       await updateMetaData(newBase);
       setStartingBalance(newBase);
-      
       showNotification('Total Balance Updated!', 'success');
       setTargetBalance('');
       setActiveTab('dashboard');
-      
-      // Trigger success animation
       setNetWorthUpdated(true);
       setTimeout(() => setNetWorthUpdated(false), 3000);
     } catch (err) {
@@ -116,26 +105,24 @@ function App() {
   };
 
   const handleDeleteExpense = async (id) => {
-  try {
-    await deleteExpense(id);
-    setExpenses(expenses.filter(e => e.id !== id));
-    showNotification('Transaction deleted', 'success');
-    // If splits dashboard is open, it will auto-refresh on next load
-    // Force it by resetting the tab if currently on splits
-    if (activeTab === 'splits') {
-      setActiveTab('dashboard');
-      setTimeout(() => setActiveTab('splits'), 100);
+    try {
+      await deleteExpense(id);
+      setExpenses(expenses.filter(e => e.id !== id));
+      showNotification('Transaction deleted', 'success');
+      if (activeTab === 'splits') {
+        setActiveTab('dashboard');
+        setTimeout(() => setActiveTab('splits'), 100);
+      }
+    } catch (err) {
+      showNotification('Failed to delete transaction', 'error');
     }
-  } catch (err) {
-    showNotification('Failed to delete transaction', 'error');
-  }
-};
+  };
 
   const handleTransferSuccess = (transfer) => {
-  showNotification('Transfer recorded successfully!', 'success');
-  setTransferRefresh((n) => n + 1);   // triggers TransferList to reload
-  setActiveTab('transfers');           // go to transfers list after saving
-};
+    showNotification('Transfer recorded successfully!', 'success');
+    setTransferRefresh((n) => n + 1);
+    setActiveTab('transfers');
+  };
 
   const showNotification = (message, type) => {
     setNotification({ message, type });
@@ -150,12 +137,11 @@ function App() {
     );
   }
 
-  if (!session) {
-    return <Auth />;
-  }
+  if (!session) return <Auth />;
 
   return (
     <div className="min-h-screen bg-surface font-inter text-on-surface flex flex-col md:flex-row">
+
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-center p-4 glass-effect sticky top-0 z-20 border-b border-outline-variant/20">
         <h1 className="text-xl font-manrope font-bold text-primary flex items-center gap-2">
@@ -166,7 +152,7 @@ function App() {
 
       {/* Sidebar Overlay */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-on-surface/20 backdrop-blur-sm z-30 md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
@@ -179,35 +165,36 @@ function App() {
           The Expense Auditor
         </h1>
         <nav className="flex flex-col gap-3 flex-1 mt-6 md:mt-0">
-          <button 
-            onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} 
+          <button
+            onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}
             className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'dashboard' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}
           >
             <LayoutDashboard className="w-5 h-5" />
             Dashboard
           </button>
-          <button 
-            onClick={() => { setActiveTab('add'); setInitialTransactionType('Expense'); setIsMobileMenuOpen(false); }} 
+          <button
+            onClick={() => { setActiveTab('add'); setInitialTransactionType('Expense'); setIsMobileMenuOpen(false); }}
             className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'add' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}
           >
             <PlusCircle className="w-5 h-5" />
             Add Transaction
           </button>
-          <button 
-            onClick={() => { setActiveTab('splits'); setIsMobileMenuOpen(false); }} 
+          <button
+            onClick={() => { setActiveTab('splits'); setIsMobileMenuOpen(false); }}
             className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'splits' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}
           >
             <Users className="w-5 h-5" />
             Splits
           </button>
           <button
-              onClick={() => { setActiveTab('transfers'); setIsMobileMenuOpen(false); }}
-              className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'transfers' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}>
-              <MoveRight className="w-5 h-5" />
-                Transfers
+            onClick={() => { setActiveTab('transfers'); setIsMobileMenuOpen(false); }}
+            className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'transfers' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}
+          >
+            <MoveRight className="w-5 h-5" />
+            Transfers
           </button>
-          <button 
-            onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }} 
+          <button
+            onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
             className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'settings' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}
           >
             <Wallet className="w-5 h-5" />
@@ -215,8 +202,8 @@ function App() {
           </button>
         </nav>
         <div className="mt-auto pt-8">
-          <button 
-            onClick={() => supabase.auth.signOut()} 
+          <button
+            onClick={() => supabase.auth.signOut()}
             className="flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all text-on-surface-variant hover:bg-error-container hover:text-on-error-container w-full"
           >
             <LogOut className="w-5 h-5" />
@@ -225,7 +212,10 @@ function App() {
         </div>
       </aside>
 
+      {/* ── Main Content ── */}
       <main className="flex-1 px-4 py-6 pb-28 md:pb-10 md:px-8 md:py-10 lg:p-12 max-w-6xl mx-auto space-y-10 w-full animate-in fade-in duration-500">
+
+        {/* Notification */}
         {notification && (
           <div className="fixed top-6 right-6 z-50 animate-in fade-in slide-in-from-top-4">
             <div className={`px-6 py-4 rounded-2xl backdrop-blur-md flex items-center gap-3 border shadow-ambient ${notification.type === 'error' ? 'bg-tertiary-container/90 border-tertiary text-tertiary-fixed' : 'bg-emerald-600/95 border-emerald-500 text-white shadow-[0_8px_30px_rgba(52,211,153,0.4)]'}`}>
@@ -234,84 +224,89 @@ function App() {
           </div>
         )}
 
+        {/* ── Tab Rendering ── */}
         {loading ? (
+
+          // 1. Loading
           <div className="flex justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
           </div>
-) : activeTab === 'settings' ? (
-  <div className="max-w-2xl animate-in slide-in-from-bottom-4 fade-in duration-500 space-y-10">
-    <header className="mb-2">
-      <h2 className="text-3xl font-manrope font-extrabold tracking-tight">Account Settings</h2>
-      <p className="text-on-surface-variant mt-2">Manage your accounts and financial baseline.</p>
-    </header>
- 
-    {/* ── Bank Accounts Section ── */}
-    <AccountSettings onAccountsChanged={(updatedAccounts) => {
-      // optional: you can use this later when wiring account switcher
-      console.log('Accounts updated:', updatedAccounts);
-    }} />
- 
-    {/* ── Divider ── */}
-    <div className="border-t border-outline-variant/20" />
- 
-    {/* ── Net Worth Update (existing) ── */}
-    <div className="bg-surface-container-lowest p-10 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-surface-container-high">
-      <h3 className="text-xl font-manrope font-semibold text-on-surface flex items-center gap-2 mb-6">
-        <Wallet className="w-5 h-5 text-primary" />
-        Update Net Worth
-      </h3>
-      <p className="text-sm text-on-surface-variant mb-8 leading-relaxed">
-        Enter your exact current bank balance or total net worth today. We will recalculate your underlying financial baseline so your history remains perfectly intact and future transactions continue tracking from this new point.
-      </p>
- 
-      <form onSubmit={handleUpdateNetWorth} className="space-y-6">
-        <div>
-          <label className="block text-label-sm uppercase tracking-wide text-on-surface-variant font-medium mb-2">
-            Current Bank Balance / Net Worth
-          </label>
-          <div className="relative">
-            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface-variant font-semibold text-lg">₹</span>
-            <input
-              type="number"
-              step="0.01"
-              required
-              value={targetBalance}
-              onChange={(e) => setTargetBalance(e.target.value)}
-              className="w-full bg-surface-container-low text-on-surface rounded-2xl py-4 pl-10 pr-4 text-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow appearance-none font-semibold text-primary"
-              placeholder="50000.00"
-            />
+
+        ) : activeTab === 'settings' ? (
+
+          // 2. Settings
+          <div className="max-w-2xl animate-in slide-in-from-bottom-4 fade-in duration-500 space-y-10">
+            <header className="mb-2">
+              <h2 className="text-3xl font-manrope font-extrabold tracking-tight">Account Settings</h2>
+              <p className="text-on-surface-variant mt-2">Manage your accounts and financial baseline.</p>
+            </header>
+
+            <AccountSettings onAccountsChanged={(updatedAccounts) => {
+              console.log('Accounts updated:', updatedAccounts);
+            }} />
+
+            <div className="border-t border-outline-variant/20" />
+
+            <div className="bg-surface-container-lowest p-10 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-surface-container-high">
+              <h3 className="text-xl font-manrope font-semibold text-on-surface flex items-center gap-2 mb-6">
+                <Wallet className="w-5 h-5 text-primary" />
+                Update Net Worth
+              </h3>
+              <p className="text-sm text-on-surface-variant mb-8 leading-relaxed">
+                Enter your exact current bank balance or total net worth today. We will recalculate your underlying financial baseline so your history remains perfectly intact and future transactions continue tracking from this new point.
+              </p>
+              <form onSubmit={handleUpdateNetWorth} className="space-y-6">
+                <div>
+                  <label className="block text-label-sm uppercase tracking-wide text-on-surface-variant font-medium mb-2">
+                    Current Bank Balance / Net Worth
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface-variant font-semibold text-lg">₹</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={targetBalance}
+                      onChange={(e) => setTargetBalance(e.target.value)}
+                      className="w-full bg-surface-container-low text-on-surface rounded-2xl py-4 pl-10 pr-4 text-lg focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow appearance-none font-semibold text-primary"
+                      placeholder="50000.00"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  className="mt-6 w-full bg-gradient-to-br from-primary to-primary-container hover:from-primary/90 hover:to-primary text-white font-bold py-4 rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98] flex justify-center items-center gap-2"
+                >
+                  <Save className="w-5 h-5" />
+                  Update Balance
+                </button>
+              </form>
+            </div>
           </div>
-        </div>
- 
-        <button
-          type="submit"
-          className="mt-6 w-full bg-gradient-to-br from-primary to-primary-container hover:from-primary/90 hover:to-primary text-white font-bold py-4 rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98] flex justify-center items-center gap-2"
-        >
-          <Save className="w-5 h-5" />
-          Update Balance
-        </button>
-      </form>
-    </div>
-  </div>
+
         ) : activeTab === 'add' ? (
+
+          // 3. Add Transaction
           <div className="max-w-2xl mx-auto animate-in slide-in-from-bottom-4 fade-in duration-500">
             <header className="mb-8">
               <h2 className="text-3xl font-manrope font-extrabold tracking-tight">Record Transaction</h2>
               <p className="text-on-surface-variant mt-2">Log a new income or expense to keep your tracking accurate.</p>
             </header>
-            
             <div className="scale-[1.02] transform origin-top">
-              <ExpenseForm 
-                onAdd={handleAddExpense} 
-                isLoading={adding} 
-                initialTransactionType={initialTransactionType} 
+              <ExpenseForm
+                onAdd={handleAddExpense}
+                isLoading={adding}
+                initialTransactionType={initialTransactionType}
                 onProceedToSplit={handleProceedToSplit}
               />
             </div>
           </div>
+
         ) : activeTab === 'split' && pendingSplitExpense ? (
+
+          // 4. Split Settlement
           <div className="animate-in fade-in duration-500">
-            <SplitSettlement 
+            <SplitSettlement
               expenseData={pendingSplitExpense}
               onFinalize={handleAddExpense}
               onCancel={() => {
@@ -321,58 +316,62 @@ function App() {
               isLoading={adding}
             />
           </div>
-        ) : activeTab === 'splits' ? (
-          <SplitsDashboard />
-        ) : (
-          <div className="animate-in fade-in duration-500 space-y-10">
-            <header>
-              <h2 className="text-3xl font-manrope font-extrabold tracking-tight mb-2">Overview</h2>
-            </header>
 
-            <Dashboard expenses={expenses} startingBalance={startingBalance} netWorthUpdated={netWorthUpdated} />
-            
-            <div className="mt-12">
-              <h3 className="text-2xl font-manrope font-bold tracking-tight mb-6 hidden">Recent Transactions</h3>
-              <ExpenseList expenses={expenses} onDelete={handleDeleteExpense} />
-            </div>
-          </div>
-        )}
+        ) : activeTab === 'splits' ? (
+
+          // 5. Splits Dashboard
+          <SplitsDashboard />
+
         ) : activeTab === 'transfers' ? (
+
+          // 6. Transfers
           <div className="max-w-2xl mx-auto animate-in fade-in duration-500 space-y-8">
             <header>
               <h2 className="text-3xl font-manrope font-extrabold tracking-tight flex items-center gap-3">
                 <MoveRight className="w-7 h-7 text-primary" />
-                  Transfers
+                Transfers
               </h2>
               <p className="text-on-surface-variant mt-2">
                 Move money between your accounts without affecting your net worth.
               </p>
             </header>
- 
-            {/* Transfer Form */}
+
             <TransferForm
               onSuccess={handleTransferSuccess}
               onCancel={() => setActiveTab('dashboard')}
             />
- 
-            {/* Divider */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1 border-t border-outline-variant/20" />
-            <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
-              Transfer History
-            </span>
-            <div className="flex-1 border-t border-outline-variant/20" />
+
+            <div className="flex items-center gap-4">
+              <div className="flex-1 border-t border-outline-variant/20" />
+              <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
+                Transfer History
+              </span>
+              <div className="flex-1 border-t border-outline-variant/20" />
+            </div>
+
+            <TransferList refreshTrigger={transferRefresh} />
           </div>
- 
-    {/* Transfer History List */}
-    <TransferList refreshTrigger={transferRefresh} />
-  </div>
+
+        ) : (
+
+          // 7. Dashboard (default fallback)
+          <div className="animate-in fade-in duration-500 space-y-10">
+            <header>
+              <h2 className="text-3xl font-manrope font-extrabold tracking-tight mb-2">Overview</h2>
+            </header>
+            <Dashboard expenses={expenses} startingBalance={startingBalance} netWorthUpdated={netWorthUpdated} />
+            <div className="mt-12">
+              <ExpenseList expenses={expenses} onDelete={handleDeleteExpense} />
+            </div>
+          </div>
+
+        )}
       </main>
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant/20 px-6 py-4 z-40 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
         <div className="flex justify-between items-center relative">
-          <button 
+          <button
             onClick={() => { setActiveTab('dashboard'); setShowAddMenu(false); }}
             className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'dashboard' ? 'text-primary' : 'text-on-surface-variant'}`}
           >
@@ -382,24 +381,23 @@ function App() {
 
           {/* Floating Action Button */}
           <div className="relative -top-8">
-            <button 
+            <button
               onClick={() => setShowAddMenu(!showAddMenu)}
               className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-300 ${showAddMenu ? 'rotate-45 bg-surface-variant text-on-surface-variant' : 'bg-primary hover:scale-105'}`}
             >
               <Plus className="w-8 h-8" />
             </button>
-            
-            {/* Add Action Menu */}
+
             {showAddMenu && (
               <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col gap-3 animate-in slide-in-from-bottom-2 fade-in">
-                <button 
+                <button
                   onClick={() => { setInitialTransactionType('Income'); setActiveTab('add'); setShowAddMenu(false); }}
                   className="flex items-center gap-3 bg-surface-container-lowest px-4 py-3 rounded-2xl shadow-xl border border-outline-variant/10 text-emerald-600 font-semibold text-sm whitespace-nowrap hover:bg-emerald-50 transition-colors"
                 >
                   <ArrowDownCircle className="w-5 h-5" />
                   Add Income
                 </button>
-                <button 
+                <button
                   onClick={() => { setInitialTransactionType('Expense'); setActiveTab('add'); setShowAddMenu(false); }}
                   className="flex items-center gap-3 bg-surface-container-lowest px-4 py-3 rounded-2xl shadow-xl border border-outline-variant/10 text-rose-500 font-semibold text-sm whitespace-nowrap hover:bg-rose-50 transition-colors"
                 >
@@ -410,23 +408,23 @@ function App() {
             )}
           </div>
 
-          <button 
+          <button
             onClick={() => { setActiveTab('splits'); setShowAddMenu(false); }}
             className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'splits' ? 'text-primary' : 'text-on-surface-variant'}`}
           >
             <Users className="w-6 h-6" />
             <span className="text-[10px] font-semibold">Splits</span>
           </button>
-          
+
           <button
             onClick={() => { setActiveTab('transfers'); setShowAddMenu(false); }}
             className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'transfers' ? 'text-primary' : 'text-on-surface-variant'}`}
-            >
+          >
             <MoveRight className="w-6 h-6" />
             <span className="text-[10px] font-semibold">Transfers</span>
           </button>
 
-          <button 
+          <button
             onClick={() => { setActiveTab('settings'); setShowAddMenu(false); }}
             className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'settings' ? 'text-primary' : 'text-on-surface-variant'}`}
           >
@@ -435,10 +433,10 @@ function App() {
           </button>
         </div>
       </div>
-      
+
       {/* Overlay for Action Menu */}
       {showAddMenu && (
-        <div 
+        <div
           className="fixed inset-0 bg-on-surface/5 backdrop-blur-[2px] z-30 md:hidden"
           onClick={() => setShowAddMenu(false)}
         />
