@@ -48,6 +48,7 @@ export const addExpense = async (expenseData) => {
     date: expenseData.date || new Date().toISOString().split('T')[0],
     // ── NEW: attach account_id if provided ──
     account_id: expenseData.account_id || null,
+    type: expenseData.type || 'Expense',
   };
 
   const { data: newExpense, error: expenseError } = await supabase
