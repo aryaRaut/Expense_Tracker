@@ -1,46 +1,52 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { fetchExpenses, addExpense, deleteExpense, fetchMetaData, updateMetaData } from './services/api';
+import { fetchAccounts } from './services/accounts';
 import Dashboard from './components/Dashboard';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
 import SplitSettlement from './components/SplitSettlement';
 import SplitsDashboard from './components/SplitsDashboard';
-import { Activity, PlusCircle, LayoutDashboard, Wallet, Save, LogOut, Menu, X, Plus, ArrowUpCircle, ArrowDownCircle, Users, MoveRight } from 'lucide-react';
-import Auth from './components/Auth';
-import { supabase } from './supabaseClient';
+import AccountSwitcher from './components/AccountSwitcher';
 import AccountSettings from './components/AccountSettings';
 import TransferForm from './components/TransferForm';
 import TransferList from './components/TransferList';
+import Auth from './components/Auth';
+import { supabase } from './supabaseClient';
+import {
+  Activity, PlusCircle, LayoutDashboard, Wallet, Save,
+  LogOut, Plus, ArrowUpCircle, ArrowDownCircle, Users, MoveRight
+} from 'lucide-react';
 
 function App() {
-  const [expenses, setExpenses] = useState([]);
-  const [startingBalance, setStartingBalance] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [adding, setAdding] = useState(false);
-  const [notification, setNotification] = useState(null);
-  
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [targetBalance, setTargetBalance] = useState('');
-  const [netWorthUpdated, setNetWorthUpdated] = useState(false);
+  const [expenses, setExpenses]                   = useState([]);
+  const [accounts, setAccounts]                   = useState([]);
+  const [selectedAccountId, setSelectedAccountId] = useState(null);
+  const [startingBalance, setStartingBalance]     = useState(0);
+  const [loading, setLoading]                     = useState(true);
+  const [adding, setAdding]                       = useState(false);
+  const [notification, setNotification]           = useState(null);
 
-  const [session, setSession] = useState(null);
-  const [authInitialized, setAuthInitialized] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeTab, setActiveTab]                 = useState('dashboard');
+  const [targetBalance, setTargetBalance]         = useState('');
+  const [netWorthUpdated, setNetWorthUpdated]     = useState(false);
+
+  const [session, setSession]                     = useState(null);
+  const [authInitialized, setAuthInitialized]     = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen]   = useState(false);
   const [initialTransactionType, setInitialTransactionType] = useState('Expense');
-  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showAddMenu, setShowAddMenu]             = useState(false);
   const [pendingSplitExpense, setPendingSplitExpense] = useState(null);
-  const [transferRefresh, setTransferRefresh] = useState(0);
+  const [transferRefresh, setTransferRefresh]     = useState(0);
 
+  // ── Auth ──────────────────────────────────────────────────
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setAuthInitialized(true);
     });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
@@ -48,15 +54,18 @@ function App() {
     if (session) loadData();
   }, [session]);
 
+  // ── Load all data ─────────────────────────────────────────
   const loadData = async () => {
     setLoading(true);
     try {
-      const [expData, metaData] = await Promise.all([
+      const [expData, metaData, accData] = await Promise.all([
         fetchExpenses(),
-        fetchMetaData()
+        fetchMetaData(),
+        fetchAccounts(),
       ]);
       setExpenses(expData);
       setStartingBalance(metaData.startingBalance);
+      setAccounts(accData);
     } catch (err) {
       showNotification('Failed to load data', 'error');
     } finally {
@@ -64,13 +73,29 @@ function App() {
     }
   };
 
+  // ── Filter expenses by selected account ───────────────────
+  const filteredExpenses = useMemo(() => {
+    if (!selectedAccountId) return expenses;
+    return expenses.filter((e) => e.account_id === selectedAccountId);
+  }, [expenses, selectedAccountId]);
+
+  // ── Starting balance for selected account ─────────────────
+  const effectiveStartingBalance = useMemo(() => {
+    if (!selectedAccountId) return startingBalance;
+    const acc = accounts.find((a) => a.id === selectedAccountId);
+    return acc ? parseFloat(acc.starting_balance || 0) : 0;
+  }, [selectedAccountId, accounts, startingBalance]);
+
+  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+
+  // ── Handlers ──────────────────────────────────────────────
   const handleUpdateNetWorth = async (e) => {
     e.preventDefault();
     if (!targetBalance) return;
     try {
-      const target = parseFloat(targetBalance);
-      const tInc = expenses.filter(ex => ex.type === 'Income').reduce((acc, curr) => acc + Number(curr.amount), 0);
-      const tExp = expenses.filter(ex => ex.type !== 'Income').reduce((acc, curr) => acc + Number(curr.amount), 0);
+      const target  = parseFloat(targetBalance);
+      const tInc    = expenses.filter(ex => ex.type === 'Income').reduce((acc, curr) => acc + Number(curr.amount), 0);
+      const tExp    = expenses.filter(ex => ex.type !== 'Income').reduce((acc, curr) => acc + Number(curr.amount), 0);
       const newBase = target - tInc + tExp;
       await updateMetaData(newBase);
       setStartingBalance(newBase);
@@ -124,15 +149,24 @@ function App() {
     setActiveTab('transfers');
   };
 
+  const handleAccountsChanged = (updatedAccounts) => {
+    setAccounts(updatedAccounts);
+    // If selected account was deleted, reset to All Accounts
+    if (selectedAccountId && !updatedAccounts.find((a) => a.id === selectedAccountId)) {
+      setSelectedAccountId(null);
+    }
+  };
+
   const showNotification = (message, type) => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
   };
 
+  // ── Guards ────────────────────────────────────────────────
   if (!authInitialized) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
       </div>
     );
   }
@@ -142,12 +176,20 @@ function App() {
   return (
     <div className="min-h-screen bg-surface font-inter text-on-surface flex flex-col md:flex-row">
 
-      {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-center p-4 glass-effect sticky top-0 z-20 border-b border-outline-variant/20">
-        <h1 className="text-xl font-manrope font-bold text-primary flex items-center gap-2">
-          <Activity className="w-6 h-6 text-primary" />
+      {/* ── Mobile Header ── */}
+      <div className="md:hidden flex items-center justify-between px-4 py-3 glass-effect sticky top-0 z-20 border-b border-outline-variant/20">
+        <h1 className="text-lg font-manrope font-bold text-primary flex items-center gap-2">
+          <Activity className="w-5 h-5" />
           Auditor
         </h1>
+        {/* Account switcher in mobile header */}
+        <div className="w-44">
+          <AccountSwitcher
+            accounts={accounts}
+            selectedAccountId={selectedAccountId}
+            onSelect={setSelectedAccountId}
+          />
+        </div>
       </div>
 
       {/* Sidebar Overlay */}
@@ -158,50 +200,52 @@ function App() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* ── Sidebar ── */}
       <aside className={`fixed md:sticky top-0 left-0 h-full w-64 bg-surface-container-lowest border-r border-outline-variant/20 p-6 z-40 transform transition-transform duration-300 ease-in-out md:translate-x-0 glass-effect flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <h1 className="text-2xl font-manrope font-bold text-primary hidden md:flex items-center gap-2 mb-10 tracking-tight">
+        <h1 className="text-2xl font-manrope font-bold text-primary hidden md:flex items-center gap-2 mb-6 tracking-tight">
           <Activity className="w-8 h-8 text-primary" />
           The Expense Auditor
         </h1>
-        <nav className="flex flex-col gap-3 flex-1 mt-6 md:mt-0">
-          <button
-            onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}
-            className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'dashboard' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}
-          >
-            <LayoutDashboard className="w-5 h-5" />
-            Dashboard
-          </button>
-          <button
-            onClick={() => { setActiveTab('add'); setInitialTransactionType('Expense'); setIsMobileMenuOpen(false); }}
-            className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'add' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}
-          >
-            <PlusCircle className="w-5 h-5" />
-            Add Transaction
-          </button>
-          <button
-            onClick={() => { setActiveTab('splits'); setIsMobileMenuOpen(false); }}
-            className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'splits' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}
-          >
-            <Users className="w-5 h-5" />
-            Splits
-          </button>
-          <button
-            onClick={() => { setActiveTab('transfers'); setIsMobileMenuOpen(false); }}
-            className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'transfers' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}
-          >
-            <MoveRight className="w-5 h-5" />
-            Transfers
-          </button>
-          <button
-            onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
-            className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === 'settings' ? 'bg-surface-container-low text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'}`}
-          >
-            <Wallet className="w-5 h-5" />
-            Account Settings
-          </button>
+
+        {/* Account Switcher — desktop sidebar */}
+        <div className="hidden md:block mb-6">
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-2 ml-1">
+            Viewing
+          </p>
+          <AccountSwitcher
+            accounts={accounts}
+            selectedAccountId={selectedAccountId}
+            onSelect={setSelectedAccountId}
+          />
+        </div>
+
+        <nav className="flex flex-col gap-2 flex-1">
+          {[
+            { tab: 'dashboard', icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard' },
+            { tab: 'add',       icon: <PlusCircle className="w-5 h-5" />,      label: 'Add Transaction' },
+            { tab: 'splits',    icon: <Users className="w-5 h-5" />,           label: 'Splits' },
+            { tab: 'transfers', icon: <MoveRight className="w-5 h-5" />,       label: 'Transfers' },
+            { tab: 'settings',  icon: <Wallet className="w-5 h-5" />,          label: 'Account Settings' },
+          ].map(({ tab, icon, label }) => (
+            <button
+              key={tab}
+              onClick={() => {
+                setActiveTab(tab);
+                if (tab === 'add') setInitialTransactionType('Expense');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${
+                activeTab === tab
+                  ? 'bg-surface-container-low text-primary font-semibold shadow-sm'
+                  : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'
+              }`}
+            >
+              {icon}{label}
+            </button>
+          ))}
         </nav>
-        <div className="mt-auto pt-8">
+
+        <div className="mt-auto pt-6">
           <button
             onClick={() => supabase.auth.signOut()}
             className="flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all text-on-surface-variant hover:bg-error-container hover:text-on-error-container w-full"
@@ -213,23 +257,52 @@ function App() {
       </aside>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 px-4 py-6 pb-28 md:pb-10 md:px-8 md:py-10 lg:p-12 max-w-6xl mx-auto space-y-10 w-full animate-in fade-in duration-500">
+      <main className="flex-1 px-4 py-6 pb-28 md:pb-10 md:px-8 md:py-10 lg:p-12 max-w-6xl mx-auto space-y-6 w-full animate-in fade-in duration-500">
 
-        {/* Notification */}
+        {/* Notification toast */}
         {notification && (
           <div className="fixed top-6 right-6 z-50 animate-in fade-in slide-in-from-top-4">
-            <div className={`px-6 py-4 rounded-2xl backdrop-blur-md flex items-center gap-3 border shadow-ambient ${notification.type === 'error' ? 'bg-tertiary-container/90 border-tertiary text-tertiary-fixed' : 'bg-emerald-600/95 border-emerald-500 text-white shadow-[0_8px_30px_rgba(52,211,153,0.4)]'}`}>
+            <div className={`px-6 py-4 rounded-2xl backdrop-blur-md flex items-center gap-3 border shadow-ambient ${
+              notification.type === 'error'
+                ? 'bg-tertiary-container/90 border-tertiary text-tertiary-fixed'
+                : 'bg-emerald-600/95 border-emerald-500 text-white shadow-[0_8px_30px_rgba(52,211,153,0.4)]'
+            }`}>
               <span className="font-semibold">{notification.message}</span>
             </div>
           </div>
         )}
 
-        {/* ── Tab Rendering ── */}
+        {/* Active account banner */}
+        {selectedAccount && (
+          <div
+            className="flex items-center gap-3 px-5 py-3 rounded-2xl border text-sm font-semibold animate-in fade-in duration-300"
+            style={{
+              backgroundColor: selectedAccount.color + '12',
+              borderColor:     selectedAccount.color + '33',
+              color:           selectedAccount.color,
+            }}
+          >
+            <span
+              className="w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: selectedAccount.color }}
+            />
+            Viewing: {selectedAccount.name}
+            <span className="ml-auto opacity-70 font-medium">{selectedAccount.type}</span>
+            <button
+              onClick={() => setSelectedAccountId(null)}
+              className="ml-2 text-xs underline opacity-70 hover:opacity-100 transition-opacity"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+
+        {/* ── Tab rendering ── */}
         {loading ? (
 
           // 1. Loading
           <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent" />
           </div>
 
         ) : activeTab === 'settings' ? (
@@ -241,9 +314,7 @@ function App() {
               <p className="text-on-surface-variant mt-2">Manage your accounts and financial baseline.</p>
             </header>
 
-            <AccountSettings onAccountsChanged={(updatedAccounts) => {
-              console.log('Accounts updated:', updatedAccounts);
-            }} />
+            <AccountSettings onAccountsChanged={handleAccountsChanged} />
 
             <div className="border-t border-outline-variant/20" />
 
@@ -309,17 +380,14 @@ function App() {
             <SplitSettlement
               expenseData={pendingSplitExpense}
               onFinalize={handleAddExpense}
-              onCancel={() => {
-                setPendingSplitExpense(null);
-                setActiveTab('add');
-              }}
+              onCancel={() => { setPendingSplitExpense(null); setActiveTab('add'); }}
               isLoading={adding}
             />
           </div>
 
         ) : activeTab === 'splits' ? (
 
-          // 5. Splits Dashboard
+          // 5. Splits
           <SplitsDashboard />
 
         ) : activeTab === 'transfers' ? (
@@ -335,12 +403,10 @@ function App() {
                 Move money between your accounts without affecting your net worth.
               </p>
             </header>
-
             <TransferForm
               onSuccess={handleTransferSuccess}
               onCancel={() => setActiveTab('dashboard')}
             />
-
             <div className="flex items-center gap-4">
               <div className="flex-1 border-t border-outline-variant/20" />
               <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
@@ -348,7 +414,6 @@ function App() {
               </span>
               <div className="flex-1 border-t border-outline-variant/20" />
             </div>
-
             <TransferList refreshTrigger={transferRefresh} />
           </div>
 
@@ -357,18 +422,24 @@ function App() {
           // 7. Dashboard (default fallback)
           <div className="animate-in fade-in duration-500 space-y-10">
             <header>
-              <h2 className="text-3xl font-manrope font-extrabold tracking-tight mb-2">Overview</h2>
+              <h2 className="text-3xl font-manrope font-extrabold tracking-tight mb-2">
+                {selectedAccount ? `${selectedAccount.name} — Overview` : 'Overview'}
+              </h2>
             </header>
-            <Dashboard expenses={expenses} startingBalance={startingBalance} netWorthUpdated={netWorthUpdated} />
+            <Dashboard
+              expenses={filteredExpenses}
+              startingBalance={effectiveStartingBalance}
+              netWorthUpdated={netWorthUpdated}
+            />
             <div className="mt-12">
-              <ExpenseList expenses={expenses} onDelete={handleDeleteExpense} />
+              <ExpenseList expenses={filteredExpenses} onDelete={handleDeleteExpense} />
             </div>
           </div>
 
         )}
       </main>
 
-      {/* Mobile Bottom Navigation */}
+      {/* ── Mobile Bottom Nav ── */}
       <div className="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant/20 px-6 py-4 z-40 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
         <div className="flex justify-between items-center relative">
           <button
@@ -379,7 +450,7 @@ function App() {
             <span className="text-[10px] font-semibold">Dashboard</span>
           </button>
 
-          {/* Floating Action Button */}
+          {/* FAB */}
           <div className="relative -top-8">
             <button
               onClick={() => setShowAddMenu(!showAddMenu)}
@@ -387,7 +458,6 @@ function App() {
             >
               <Plus className="w-8 h-8" />
             </button>
-
             {showAddMenu && (
               <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col gap-3 animate-in slide-in-from-bottom-2 fade-in">
                 <button
@@ -434,7 +504,7 @@ function App() {
         </div>
       </div>
 
-      {/* Overlay for Action Menu */}
+      {/* FAB overlay */}
       {showAddMenu && (
         <div
           className="fixed inset-0 bg-on-surface/5 backdrop-blur-[2px] z-30 md:hidden"
