@@ -430,6 +430,8 @@ function App() {
               expenses={filteredExpenses}
               startingBalance={effectiveStartingBalance}
               netWorthUpdated={netWorthUpdated}
+              accounts={selectedAccountId ? [] : accounts}
+              onSelectAccount={setSelectedAccountId}
             />
             <div className="mt-12">
               <ExpenseList expenses={filteredExpenses} onDelete={handleDeleteExpense} />
