@@ -88,7 +88,7 @@ export const addExpense = async (expenseData) => {
 export const updateExpense = async (id, updates) => {
   const userId = await getUserId();
   if (!userId) throw new Error('Authentication required');
- 
+
   const payload = {
     description: updates.description,
     amount:      parseFloat(updates.amount),
@@ -97,21 +97,26 @@ export const updateExpense = async (id, updates) => {
     type:        updates.type,
     account_id:  updates.account_id || null,
   };
- 
+
   const { data, error } = await supabase
     .from('expenses')
     .update(payload)
     .eq('id', id)
     .eq('user_id', userId)
-    .select()
-    .single();
- 
+    .select();
+
   if (error) {
     console.error('Update expense error:', error.message);
     throw error;
   }
-  return data;
+
+  if (!data || data.length === 0) {
+    throw new Error('Transaction not found or unauthorized');
+  }
+
+  return data[0];
 };
+
 
 export const deleteExpense = async (id) => {
   const { data: { user } } = await supabase.auth.getUser();
