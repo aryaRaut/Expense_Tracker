@@ -102,7 +102,6 @@ export const updateExpense = async (id, updates) => {
     .from('expenses')
     .update(payload)
     .eq('id', id)
-    .eq('user_id', userId)
     .select();
 
   if (error) {
@@ -116,7 +115,6 @@ export const updateExpense = async (id, updates) => {
 
   return data[0];
 };
-
 
 export const deleteExpense = async (id) => {
   const { data: { user } } = await supabase.auth.getUser();
