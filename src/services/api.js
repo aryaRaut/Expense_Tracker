@@ -85,6 +85,34 @@ export const addExpense = async (expenseData) => {
   return newExpense;
 };
 
+export const updateExpense = async (id, updates) => {
+  const userId = await getUserId();
+  if (!userId) throw new Error('Authentication required');
+ 
+  const payload = {
+    description: updates.description,
+    amount:      parseFloat(updates.amount),
+    category:    updates.category,
+    date:        updates.date,
+    type:        updates.type,
+    account_id:  updates.account_id || null,
+  };
+ 
+  const { data, error } = await supabase
+    .from('expenses')
+    .update(payload)
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select()
+    .single();
+ 
+  if (error) {
+    console.error('Update expense error:', error.message);
+    throw error;
+  }
+  return data;
+};
+
 export const deleteExpense = async (id) => {
   const { data: { user } } = await supabase.auth.getUser();
   

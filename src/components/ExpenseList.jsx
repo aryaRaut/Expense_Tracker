@@ -1,23 +1,24 @@
 import React, { useState, useMemo } from 'react';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
-import { Trash2, Receipt, SearchX } from 'lucide-react';
+import { Trash2, Receipt, SearchX, Pencil } from 'lucide-react';
 import { cn } from '../utils/cn';
 import SearchBar from './SearchBar';
+import EditTransactionModal from './EditTransactionModal';
 
-export default function ExpenseList({ expenses, onDelete }) {
+export default function ExpenseList({ expenses, onDelete, onEdit }) {
   const [searchParams, setSearchParams] = useState({
     description: '',
-    startDate: '',
-    endDate: ''
+    startDate:   '',
+    endDate:     '',
   });
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [isSaving, setIsSaving]            = useState(false);
 
-  const handleSearch = (params) => {
-    setSearchParams(params);
-  };
+  const handleSearch = (params) => setSearchParams(params);
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter((expense) => {
-      // Description filter — case-insensitive, partial match
+      // Description filter
       const descMatch = searchParams.description.trim() === ''
         ? true
         : expense.description?.toLowerCase().includes(searchParams.description.trim().toLowerCase());
@@ -29,7 +30,7 @@ export default function ExpenseList({ expenses, onDelete }) {
         if (searchParams.startDate && searchParams.endDate) {
           dateMatch = isWithinInterval(expDate, {
             start: startOfDay(parseISO(searchParams.startDate)),
-            end: endOfDay(parseISO(searchParams.endDate))
+            end:   endOfDay(parseISO(searchParams.endDate)),
           });
         } else if (searchParams.startDate) {
           dateMatch = expDate >= startOfDay(parseISO(searchParams.startDate));
@@ -37,12 +38,21 @@ export default function ExpenseList({ expenses, onDelete }) {
           dateMatch = expDate <= endOfDay(parseISO(searchParams.endDate));
         }
       }
-
       return descMatch && dateMatch;
     });
   }, [expenses, searchParams]);
 
   const hasActiveSearch = searchParams.description || searchParams.startDate || searchParams.endDate;
+
+  const handleSaveEdit = async (updatedExpense) => {
+    setIsSaving(true);
+    try {
+      await onEdit(updatedExpense);
+      setEditingExpense(null);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (expenses.length === 0) {
     return (
@@ -63,6 +73,8 @@ export default function ExpenseList({ expenses, onDelete }) {
 
   return (
     <div className="space-y-4">
+
+      {/* Header */}
       <div className="px-2 md:px-4 flex items-center justify-between">
         <h3 className="text-2xl font-manrope font-bold text-on-surface">Recent Transactions</h3>
         {hasActiveSearch && (
@@ -72,10 +84,10 @@ export default function ExpenseList({ expenses, onDelete }) {
         )}
       </div>
 
-      {/* Search Bar */}
+      {/* Search */}
       <SearchBar onSearch={handleSearch} />
 
-      {/* Results */}
+      {/* Empty search result */}
       {filteredExpenses.length === 0 ? (
         <div className="bg-surface-container-lowest border border-outline-variant/30 border-dashed rounded-3xl p-12 text-center text-on-surface-variant animate-in fade-in duration-300">
           <div className="bg-surface-container-low w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -91,30 +103,35 @@ export default function ExpenseList({ expenses, onDelete }) {
           </p>
         </div>
       ) : (
+
+        // Transaction rows
         <div className="grid grid-cols-1 gap-4">
           {filteredExpenses.map((expense) => (
             <div
               key={expense.id}
               className="glass-effect-dark p-6 rounded-3xl transition-all duration-300 hover:-translate-y-1 flex flex-col sm:flex-row sm:items-center justify-between group gap-4"
             >
+              {/* Left */}
               <div className="flex items-center gap-4">
                 <div className={cn(
-                  "hidden sm:flex p-3 rounded-2xl",
-                  expense.type === 'Income' ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"
+                  'hidden sm:flex p-3 rounded-2xl',
+                  expense.type === 'Income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
                 )}>
                   <Receipt className="w-6 h-6" />
                 </div>
                 <div>
                   <p className="font-semibold text-on-surface text-lg">
-                    {/* Highlight matching description text */}
                     {searchParams.description.trim()
                       ? highlightMatch(expense.description, searchParams.description.trim())
-                      : expense.description}
+                      : expense.description
+                    }
                   </p>
                   <div className="text-sm text-on-surface-variant flex items-center gap-2 mt-1">
                     <span className={cn(
-                      "px-2 py-0.5 rounded-md text-xs font-medium tracking-wide uppercase",
-                      expense.type === 'Income' ? "bg-emerald-100 text-emerald-700" : "bg-surface-container-highest"
+                      'px-2 py-0.5 rounded-md text-xs font-medium tracking-wide uppercase',
+                      expense.type === 'Income'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-surface-container-highest'
                     )}>
                       {expense.type === 'Income' ? 'Income' : expense.category}
                     </span>
@@ -124,30 +141,54 @@ export default function ExpenseList({ expenses, onDelete }) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-6">
+              {/* Right */}
+              <div className="flex items-center gap-4">
                 <span className={cn(
-                  "font-manrope font-bold text-lg",
-                  expense.type === 'Income' ? "text-emerald-500" : "text-rose-500"
+                  'font-manrope font-bold text-lg',
+                  expense.type === 'Income' ? 'text-emerald-500' : 'text-rose-500'
                 )}>
-                  {expense.type === 'Income' ? '+' : '-'}₹{Number(expense.amount).toFixed(2)}
+                  {expense.type === 'Income' ? '+' : '-'}₹{Number(expense.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
-                <button
-                  onClick={() => onDelete(expense.id)}
-                  className="text-outline-variant hover:text-tertiary transition-colors p-2 rounded-xl hover:bg-tertiary-container/20 opacity-100 sm:opacity-0 group-hover:opacity-100 focus:opacity-100"
-                  aria-label="Delete expense"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+
+                {/* Action buttons — visible on hover */}
+                <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
+                  {/* Edit */}
+                  <button
+                    onClick={() => setEditingExpense(expense)}
+                    className="p-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-primary/10 transition-colors"
+                    aria-label="Edit transaction"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  {/* Delete */}
+                  <button
+                    onClick={() => onDelete(expense.id)}
+                    className="p-2 rounded-xl text-on-surface-variant hover:text-tertiary hover:bg-tertiary-container/20 transition-colors"
+                    aria-label="Delete transaction"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Edit Modal */}
+      {editingExpense && (
+        <EditTransactionModal
+          expense={editingExpense}
+          onSave={handleSaveEdit}
+          onClose={() => setEditingExpense(null)}
+          isSaving={isSaving}
+        />
+      )}
     </div>
   );
 }
 
-// Helper: wraps matched text in a highlighted span
+// Highlight matching text in description
 function highlightMatch(text, query) {
   if (!text || !query) return text;
   const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
@@ -159,9 +200,7 @@ function highlightMatch(text, query) {
           <mark key={i} className="bg-primary/15 text-primary rounded px-0.5 font-bold not-italic">
             {part}
           </mark>
-        ) : (
-          part
-        )
+        ) : part
       )}
     </>
   );

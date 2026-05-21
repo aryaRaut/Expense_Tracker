@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { fetchExpenses, addExpense, deleteExpense } from './services/api';
+import { fetchExpenses, addExpense, deleteExpense, updateExpense } from './services/api';
 import { fetchAccounts } from './services/accounts';
 import Dashboard from './components/Dashboard';
 import ExpenseForm from './components/ExpenseForm';
@@ -110,6 +110,20 @@ function App() {
       }
     } catch (err) {
       showNotification('Failed to delete transaction', 'error');
+    }
+  };
+
+  const handleEditExpense = async (updatedExpense) => {
+    try {
+      const saved = await updateExpense(updatedExpense.id, updatedExpense);
+      // Replace the old expense in state with the updated one
+      setExpenses((prev) =>
+        prev.map((e) => (e.id === saved.id ? saved : e))
+      );
+      showNotification('Transaction updated!', 'success');
+    } catch (err) {
+      showNotification('Failed to update transaction', 'error');
+      throw err; // re-throw so modal stays open on error
     }
   };
 
@@ -354,7 +368,7 @@ function App() {
               onSelectAccount={setSelectedAccountId}
             />
             <div className="mt-12">
-              <ExpenseList expenses={filteredExpenses} onDelete={handleDeleteExpense} />
+              <ExpenseList expenses={filteredExpenses} onDelete={handleDeleteExpense} onEdit={handleEditExpense} />
             </div>
           </div>
 
