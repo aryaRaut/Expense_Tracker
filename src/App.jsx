@@ -18,23 +18,23 @@ import {
 } from 'lucide-react';
 
 function App() {
-  const [expenses, setExpenses]                   = useState([]);
-  const [accounts, setAccounts]                   = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [accounts, setAccounts] = useState([]);
   const [selectedAccountId, setSelectedAccountId] = useState(null);
-  const [loading, setLoading]                     = useState(true);
-  const [adding, setAdding]                       = useState(false);
-  const [notification, setNotification]           = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [notification, setNotification] = useState(null);
 
-  const [activeTab, setActiveTab]                 = useState('dashboard');
-  const [netWorthUpdated, setNetWorthUpdated]     = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [netWorthUpdated, setNetWorthUpdated] = useState(false);
 
-  const [session, setSession]                     = useState(null);
-  const [authInitialized, setAuthInitialized]     = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen]   = useState(false);
+  const [session, setSession] = useState(null);
+  const [authInitialized, setAuthInitialized] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [initialTransactionType, setInitialTransactionType] = useState('Expense');
-  const [showAddMenu, setShowAddMenu]             = useState(false);
+  const [showAddMenu, setShowAddMenu] = useState(false);
   const [pendingSplitExpense, setPendingSplitExpense] = useState(null);
-  const [transferRefresh, setTransferRefresh]     = useState(0);
+  const [transferRefresh, setTransferRefresh] = useState(0);
 
   // ── Auth ──────────────────────────────────────────────────
   useEffect(() => {
@@ -205,10 +205,10 @@ function App() {
         <nav className="flex flex-col gap-2 flex-1">
           {[
             { tab: 'dashboard', icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard' },
-            { tab: 'add',       icon: <PlusCircle className="w-5 h-5" />,      label: 'Add Transaction' },
-            { tab: 'splits',    icon: <Users className="w-5 h-5" />,           label: 'Splits' },
-            { tab: 'transfers', icon: <MoveRight className="w-5 h-5" />,       label: 'Transfers' },
-            { tab: 'settings',  icon: <Wallet className="w-5 h-5" />,          label: 'Account Settings' },
+            { tab: 'add', icon: <PlusCircle className="w-5 h-5" />, label: 'Add Transaction' },
+            { tab: 'splits', icon: <Users className="w-5 h-5" />, label: 'Splits' },
+            { tab: 'transfers', icon: <MoveRight className="w-5 h-5" />, label: 'Transfers' },
+            { tab: 'settings', icon: <Wallet className="w-5 h-5" />, label: 'Account Settings' },
           ].map(({ tab, icon, label }) => (
             <button
               key={tab}
@@ -217,11 +217,10 @@ function App() {
                 if (tab === 'add') setInitialTransactionType('Expense');
                 setIsMobileMenuOpen(false);
               }}
-              className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${
-                activeTab === tab
+              className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === tab
                   ? 'bg-surface-container-low text-primary font-semibold shadow-sm'
                   : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'
-              }`}
+                }`}
             >
               {icon}{label}
             </button>
@@ -245,11 +244,10 @@ function App() {
         {/* Notification */}
         {notification && (
           <div className="fixed top-6 right-6 z-50 animate-in fade-in slide-in-from-top-4">
-            <div className={`px-6 py-4 rounded-2xl backdrop-blur-md flex items-center gap-3 border shadow-ambient ${
-              notification.type === 'error'
+            <div className={`px-6 py-4 rounded-2xl backdrop-blur-md flex items-center gap-3 border shadow-ambient ${notification.type === 'error'
                 ? 'bg-tertiary-container/90 border-tertiary text-tertiary-fixed'
                 : 'bg-emerald-600/95 border-emerald-500 text-white shadow-[0_8px_30px_rgba(52,211,153,0.4)]'
-            }`}>
+              }`}>
               <span className="font-semibold">{notification.message}</span>
             </div>
           </div>
@@ -261,8 +259,8 @@ function App() {
             className="flex items-center gap-3 px-5 py-3 rounded-2xl border text-sm font-semibold animate-in fade-in duration-300"
             style={{
               backgroundColor: selectedAccount.color + '12',
-              borderColor:     selectedAccount.color + '33',
-              color:           selectedAccount.color,
+              borderColor: selectedAccount.color + '33',
+              color: selectedAccount.color,
             }}
           >
             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: selectedAccount.color }} />
@@ -377,16 +375,27 @@ function App() {
 
       {/* Mobile Bottom Nav */}
       <div className="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant/20 px-6 py-4 z-40 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-        <div className="flex justify-between items-center relative">
+        <div className="flex items-center justify-between relative">
+
+          {/* Left side */}
           <button
             onClick={() => { setActiveTab('dashboard'); setShowAddMenu(false); }}
-            className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'dashboard' ? 'text-primary' : 'text-on-surface-variant'}`}
+            className={`flex flex-col items-center gap-1 p-2 flex-1 ${activeTab === 'dashboard' ? 'text-primary' : 'text-on-surface-variant'}`}
           >
             <LayoutDashboard className="w-6 h-6" />
             <span className="text-[10px] font-semibold">Dashboard</span>
           </button>
 
-          <div className="relative -top-8">
+          <button
+            onClick={() => { setActiveTab('splits'); setShowAddMenu(false); }}
+            className={`flex flex-col items-center gap-1 p-2 flex-1 ${activeTab === 'splits' ? 'text-primary' : 'text-on-surface-variant'}`}
+          >
+            <Users className="w-6 h-6" />
+            <span className="text-[10px] font-semibold">Splits</span>
+          </button>
+
+          {/* FAB — center */}
+          <div className="relative flex-1 flex justify-center -top-5">
             <button
               onClick={() => setShowAddMenu(!showAddMenu)}
               className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-300 ${showAddMenu ? 'rotate-45 bg-surface-variant text-on-surface-variant' : 'bg-primary hover:scale-105'}`}
@@ -394,7 +403,7 @@ function App() {
               <Plus className="w-8 h-8" />
             </button>
             {showAddMenu && (
-              <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col gap-3 animate-in slide-in-from-bottom-2 fade-in">
+              <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col gap-3 animate-in slide-in-from-bottom-2 fade-in z-50">
                 <button
                   onClick={() => { setInitialTransactionType('Income'); setActiveTab('add'); setShowAddMenu(false); }}
                   className="flex items-center gap-3 bg-surface-container-lowest px-4 py-3 rounded-2xl shadow-xl border border-outline-variant/10 text-emerald-600 font-semibold text-sm whitespace-nowrap hover:bg-emerald-50 transition-colors"
@@ -413,17 +422,10 @@ function App() {
             )}
           </div>
 
-          <button
-            onClick={() => { setActiveTab('splits'); setShowAddMenu(false); }}
-            className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'splits' ? 'text-primary' : 'text-on-surface-variant'}`}
-          >
-            <Users className="w-6 h-6" />
-            <span className="text-[10px] font-semibold">Splits</span>
-          </button>
-
+          {/* Right side */}
           <button
             onClick={() => { setActiveTab('transfers'); setShowAddMenu(false); }}
-            className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'transfers' ? 'text-primary' : 'text-on-surface-variant'}`}
+            className={`flex flex-col items-center gap-1 p-2 flex-1 ${activeTab === 'transfers' ? 'text-primary' : 'text-on-surface-variant'}`}
           >
             <MoveRight className="w-6 h-6" />
             <span className="text-[10px] font-semibold">Transfers</span>
@@ -431,11 +433,12 @@ function App() {
 
           <button
             onClick={() => { setActiveTab('settings'); setShowAddMenu(false); }}
-            className={`flex flex-col items-center gap-1 p-2 ${activeTab === 'settings' ? 'text-primary' : 'text-on-surface-variant'}`}
+            className={`flex flex-col items-center gap-1 p-2 flex-1 ${activeTab === 'settings' ? 'text-primary' : 'text-on-surface-variant'}`}
           >
             <Wallet className="w-6 h-6" />
             <span className="text-[10px] font-semibold">Settings</span>
           </button>
+
         </div>
       </div>
 
