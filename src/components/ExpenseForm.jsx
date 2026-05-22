@@ -134,7 +134,7 @@ export default function ExpenseForm({
           ) : (
             <>
               {/* Pill buttons — scrollable row on mobile */}
-              <div className="flex gap-2 overflow-x-auto pb-2 pt-1 scrollbar-none -mx-1 px-1">
+              <div className="flex gap-2 overflow-x-auto pb-2 pt-3 scrollbar-none -mx-1 px-3">
                 {accounts.map((acc) => (
                   <button
                     key={acc.id}
