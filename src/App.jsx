@@ -218,8 +218,8 @@ function App() {
                 setIsMobileMenuOpen(false);
               }}
               className={`flex items-center gap-3 font-medium text-sm px-4 py-3 rounded-2xl transition-all ${activeTab === tab
-                  ? 'bg-surface-container-low text-primary font-semibold shadow-sm'
-                  : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'
+                ? 'bg-surface-container-low text-primary font-semibold shadow-sm'
+                : 'text-on-surface-variant hover:bg-surface-container-low/50 hover:text-on-surface'
                 }`}
             >
               {icon}{label}
@@ -245,8 +245,8 @@ function App() {
         {notification && (
           <div className="fixed top-6 right-6 z-50 animate-in fade-in slide-in-from-top-4">
             <div className={`px-6 py-4 rounded-2xl backdrop-blur-md flex items-center gap-3 border shadow-ambient ${notification.type === 'error'
-                ? 'bg-tertiary-container/90 border-tertiary text-tertiary-fixed'
-                : 'bg-emerald-600/95 border-emerald-500 text-white shadow-[0_8px_30px_rgba(52,211,153,0.4)]'
+              ? 'bg-tertiary-container/90 border-tertiary text-tertiary-fixed'
+              : 'bg-emerald-600/95 border-emerald-500 text-white shadow-[0_8px_30px_rgba(52,211,153,0.4)]'
               }`}>
               <span className="font-semibold">{notification.message}</span>
             </div>
@@ -291,6 +291,16 @@ function App() {
               <p className="text-on-surface-variant mt-2">Manage your bank accounts and wallets.</p>
             </header>
             <AccountSettings onAccountsChanged={handleAccountsChanged} />
+            {/* Sign Out — mobile only */}
+            <div className="md:hidden mt-6">
+              <button
+                onClick={() => supabase.auth.signOut()}
+                className="w-full flex items-center justify-center gap-3 font-semibold text-sm px-4 py-4 rounded-2xl transition-all text-rose-500 bg-rose-50 border border-rose-100 hover:bg-rose-100 active:scale-[0.98] touch-manipulation"
+              >
+                <LogOut className="w-5 h-5" />
+                Sign Out
+              </button>
+            </div>
           </div>
 
         ) : activeTab === 'add' ? (
