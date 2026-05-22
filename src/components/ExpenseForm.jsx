@@ -16,19 +16,19 @@ export default function ExpenseForm({
   onProceedToSplit
 }) {
   const [formData, setFormData] = useState({
-    type:        initialTransactionType,
-    amount:      '',
+    type: initialTransactionType,
+    amount: '',
     description: '',
-    category:    'Other',
-    date:        format(new Date(), 'yyyy-MM-dd'),
-    account_id:  '',
+    category: 'Other',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    account_id: '',
   });
 
-  const [isSplitting, setIsSplitting]        = useState(false);
-  const [aiGuessed, setAiGuessed]            = useState(false);
-  const [accounts, setAccounts]              = useState([]);
+  const [isSplitting, setIsSplitting] = useState(false);
+  const [aiGuessed, setAiGuessed] = useState(false);
+  const [accounts, setAccounts] = useState([]);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
-  const [noAccounts, setNoAccounts]          = useState(false);
+  const [noAccounts, setNoAccounts] = useState(false);
 
   useEffect(() => {
     fetchAccounts().then((data) => {
@@ -51,12 +51,12 @@ export default function ExpenseForm({
   useEffect(() => {
     const desc = formData.description.toLowerCase();
     let guessed = null;
-    if (desc.match(/uber|lyft|taxi|gas|train|bus/))                          guessed = 'Transportation';
+    if (desc.match(/uber|lyft|taxi|gas|train|bus/)) guessed = 'Transportation';
     else if (desc.match(/coffee|burger|tea|lunch|dinner|pizza|starbucks|groceries/)) guessed = 'Food & Dining';
-    else if (desc.match(/rent|mortgage|ikea|furniture/))                     guessed = 'Housing';
-    else if (desc.match(/electric|water|internet|verizon|wifi/))             guessed = 'Utilities';
-    else if (desc.match(/movie|netflix|spotify|concert|game/))               guessed = 'Entertainment';
-    else if (desc.match(/doctor|pharmacy|cvs|medicine|gym/))                 guessed = 'Health';
+    else if (desc.match(/rent|mortgage|ikea|furniture/)) guessed = 'Housing';
+    else if (desc.match(/electric|water|internet|verizon|wifi/)) guessed = 'Utilities';
+    else if (desc.match(/movie|netflix|spotify|concert|game/)) guessed = 'Entertainment';
+    else if (desc.match(/doctor|pharmacy|cvs|medicine|gym/)) guessed = 'Health';
     if (guessed && guessed !== formData.category) {
       setFormData((p) => ({ ...p, category: guessed }));
       setAiGuessed(true);
@@ -75,12 +75,12 @@ export default function ExpenseForm({
     }
     await onAdd(formData);
     setFormData({
-      type:        formData.type,
-      amount:      '',
+      type: formData.type,
+      amount: '',
       description: '',
-      category:    'Other',
-      date:        format(new Date(), 'yyyy-MM-dd'),
-      account_id:  formData.account_id,
+      category: 'Other',
+      date: format(new Date(), 'yyyy-MM-dd'),
+      account_id: formData.account_id,
     });
     setIsSplitting(false);
   };
@@ -134,7 +134,7 @@ export default function ExpenseForm({
           ) : (
             <>
               {/* Pill buttons — scrollable row on mobile */}
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+              <div className="flex gap-2 overflow-x-auto pb-2 pt-1 scrollbar-none -mx-1 px-1">
                 {accounts.map((acc) => (
                   <button
                     key={acc.id}
@@ -143,7 +143,7 @@ export default function ExpenseForm({
                     className={cn(
                       'flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all shrink-0 touch-manipulation',
                       formData.account_id === acc.id
-                        ? 'scale-105 shadow-sm ring-2 ring-offset-1'
+                        ? 'scale-105 shadow-md ring-2 ring-offset-2 opacity-100'
                         : 'opacity-60 hover:opacity-90'
                     )}
                     style={{
