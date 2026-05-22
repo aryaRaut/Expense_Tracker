@@ -12,18 +12,16 @@ export default function ExpenseList({ expenses, onDelete, onEdit }) {
     endDate:     '',
   });
   const [editingExpense, setEditingExpense] = useState(null);
-  const [isSaving, setIsSaving]            = useState(false);
+  const [isSaving, setIsSaving]            = useState(null); // store id being saved
 
   const handleSearch = (params) => setSearchParams(params);
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter((expense) => {
-      // Description filter
       const descMatch = searchParams.description.trim() === ''
         ? true
         : expense.description?.toLowerCase().includes(searchParams.description.trim().toLowerCase());
 
-      // Date range filter
       let dateMatch = true;
       if (searchParams.startDate || searchParams.endDate) {
         const expDate = startOfDay(parseISO(expense.date));
@@ -34,7 +32,7 @@ export default function ExpenseList({ expenses, onDelete, onEdit }) {
           });
         } else if (searchParams.startDate) {
           dateMatch = expDate >= startOfDay(parseISO(searchParams.startDate));
-        } else if (searchParams.endDate) {
+        } else {
           dateMatch = expDate <= endOfDay(parseISO(searchParams.endDate));
         }
       }
@@ -45,27 +43,27 @@ export default function ExpenseList({ expenses, onDelete, onEdit }) {
   const hasActiveSearch = searchParams.description || searchParams.startDate || searchParams.endDate;
 
   const handleSaveEdit = async (updatedExpense) => {
-    setIsSaving(true);
+    setIsSaving(updatedExpense.id);
     try {
       await onEdit(updatedExpense);
       setEditingExpense(null);
     } finally {
-      setIsSaving(false);
+      setIsSaving(null);
     }
   };
 
   if (expenses.length === 0) {
     return (
       <div className="space-y-4">
-        <div className="px-2 md:px-4">
-          <h3 className="text-2xl font-manrope font-bold text-on-surface">Recent Transactions</h3>
-        </div>
-        <div className="bg-surface-container-lowest border border-outline-variant/30 border-dashed rounded-3xl p-12 text-center text-on-surface-variant">
-          <div className="bg-surface-container-low w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Receipt className="w-8 h-8 text-outline-variant" />
+        <h3 className="text-xl md:text-2xl font-manrope font-bold text-on-surface px-1">
+          Recent Transactions
+        </h3>
+        <div className="bg-surface-container-lowest border border-outline-variant/30 border-dashed rounded-2xl md:rounded-3xl p-8 md:p-12 text-center text-on-surface-variant">
+          <div className="bg-surface-container-low w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3">
+            <Receipt className="w-7 h-7 text-outline-variant" />
           </div>
-          <h4 className="text-xl font-manrope font-semibold text-on-surface mb-2">No expenses yet</h4>
-          <p>Record your first expense to begin tracking your spending.</p>
+          <h4 className="text-lg font-manrope font-semibold text-on-surface mb-1">No expenses yet</h4>
+          <p className="text-sm">Record your first expense to begin tracking.</p>
         </div>
       </div>
     );
@@ -75,11 +73,13 @@ export default function ExpenseList({ expenses, onDelete, onEdit }) {
     <div className="space-y-4">
 
       {/* Header */}
-      <div className="px-2 md:px-4 flex items-center justify-between">
-        <h3 className="text-2xl font-manrope font-bold text-on-surface">Recent Transactions</h3>
+      <div className="flex items-center justify-between px-1">
+        <h3 className="text-xl md:text-2xl font-manrope font-bold text-on-surface">
+          Recent Transactions
+        </h3>
         {hasActiveSearch && (
-          <span className="text-sm font-semibold text-on-surface-variant bg-surface-container-low px-3 py-1 rounded-xl">
-            {filteredExpenses.length} of {expenses.length} shown
+          <span className="text-xs font-semibold text-on-surface-variant bg-surface-container-low px-2.5 py-1 rounded-xl">
+            {filteredExpenses.length}/{expenses.length}
           </span>
         )}
       </div>
@@ -87,87 +87,92 @@ export default function ExpenseList({ expenses, onDelete, onEdit }) {
       {/* Search */}
       <SearchBar onSearch={handleSearch} />
 
-      {/* Empty search result */}
+      {/* Empty search */}
       {filteredExpenses.length === 0 ? (
-        <div className="bg-surface-container-lowest border border-outline-variant/30 border-dashed rounded-3xl p-12 text-center text-on-surface-variant animate-in fade-in duration-300">
-          <div className="bg-surface-container-low w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <SearchX className="w-8 h-8 text-outline-variant" />
-          </div>
-          <h4 className="text-xl font-manrope font-semibold text-on-surface mb-2">No results found</h4>
+        <div className="bg-surface-container-lowest border border-outline-variant/30 border-dashed rounded-2xl p-8 text-center text-on-surface-variant">
+          <SearchX className="w-10 h-10 mx-auto mb-3 text-outline-variant" />
+          <h4 className="text-base font-manrope font-semibold text-on-surface mb-1">No results found</h4>
           <p className="text-sm">
-            {searchParams.description && (
-              <>No transactions matching <span className="font-semibold text-primary">"{searchParams.description}"</span></>
-            )}
-            {searchParams.description && (searchParams.startDate || searchParams.endDate) && ' in the selected date range.'}
-            {!searchParams.description && (searchParams.startDate || searchParams.endDate) && 'No transactions in the selected date range.'}
+            {searchParams.description
+              ? <>No match for <span className="font-semibold text-primary">"{searchParams.description}"</span></>
+              : 'No transactions in selected date range.'
+            }
           </p>
         </div>
       ) : (
-
-        // Transaction rows
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-3 md:gap-4">
           {filteredExpenses.map((expense) => (
             <div
               key={expense.id}
-              className="glass-effect-dark p-6 rounded-3xl transition-all duration-300 hover:-translate-y-1 flex flex-col sm:flex-row sm:items-center justify-between group gap-4"
+              className="glass-effect-dark rounded-2xl md:rounded-3xl transition-all duration-200 overflow-hidden"
             >
-              {/* Left */}
-              <div className="flex items-center gap-4">
+              {/* Main row */}
+              <div className="flex items-center gap-3 p-4 md:p-6">
+
+                {/* Type indicator dot — mobile */}
                 <div className={cn(
-                  'hidden sm:flex p-3 rounded-2xl',
+                  'w-1 self-stretch rounded-full shrink-0 md:hidden',
+                  expense.type === 'Income' ? 'bg-emerald-400' : 'bg-rose-400'
+                )} />
+
+                {/* Icon — desktop only */}
+                <div className={cn(
+                  'hidden md:flex p-3 rounded-2xl shrink-0',
                   expense.type === 'Income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
                 )}>
-                  <Receipt className="w-6 h-6" />
+                  <Receipt className="w-5 h-5" />
                 </div>
-                <div>
-                  <p className="font-semibold text-on-surface text-lg">
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-on-surface text-sm md:text-base leading-tight truncate">
                     {searchParams.description.trim()
                       ? highlightMatch(expense.description, searchParams.description.trim())
                       : expense.description
                     }
                   </p>
-                  <div className="text-sm text-on-surface-variant flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     <span className={cn(
-                      'px-2 py-0.5 rounded-md text-xs font-medium tracking-wide uppercase',
+                      'px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide',
                       expense.type === 'Income'
                         ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-surface-container-highest'
+                        : 'bg-surface-container-highest text-on-surface-variant'
                     )}>
                       {expense.type === 'Income' ? 'Income' : expense.category}
                     </span>
-                    <span>•</span>
-                    <span>{format(parseISO(expense.date), 'MMM dd, yyyy')}</span>
+                    <span className="text-on-surface-variant/40 text-xs">•</span>
+                    <span className="text-xs text-on-surface-variant">
+                      {format(parseISO(expense.date), 'MMM d, yyyy')}
+                    </span>
                   </div>
                 </div>
-              </div>
 
-              {/* Right */}
-              <div className="flex items-center gap-4">
-                <span className={cn(
-                  'font-manrope font-bold text-lg',
-                  expense.type === 'Income' ? 'text-emerald-500' : 'text-rose-500'
-                )}>
-                  {expense.type === 'Income' ? '+' : '-'}₹{Number(expense.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </span>
+                {/* Amount + actions */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={cn(
+                    'font-manrope font-bold text-sm md:text-base',
+                    expense.type === 'Income' ? 'text-emerald-500' : 'text-rose-500'
+                  )}>
+                    {expense.type === 'Income' ? '+' : '-'}₹{Number(expense.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
 
-                {/* Action buttons — visible on hover */}
-                <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
-                  {/* Edit */}
-                  <button
-                    onClick={() => setEditingExpense(expense)}
-                    className="p-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-primary/10 transition-colors"
-                    aria-label="Edit transaction"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  {/* Delete */}
-                  <button
-                    onClick={() => onDelete(expense.id)}
-                    className="p-2 rounded-xl text-on-surface-variant hover:text-tertiary hover:bg-tertiary-container/20 transition-colors"
-                    aria-label="Delete transaction"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {/* Actions — always visible on mobile, hover on desktop */}
+                  <div className="flex items-center gap-0.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => setEditingExpense(expense)}
+                      className="p-1.5 md:p-2 rounded-xl text-on-surface-variant hover:text-primary hover:bg-primary/10 transition-colors touch-manipulation"
+                      aria-label="Edit"
+                    >
+                      <Pencil className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(expense.id)}
+                      className="p-1.5 md:p-2 rounded-xl text-on-surface-variant hover:text-rose-500 hover:bg-rose-50 transition-colors touch-manipulation"
+                      aria-label="Delete"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -181,14 +186,13 @@ export default function ExpenseList({ expenses, onDelete, onEdit }) {
           expense={editingExpense}
           onSave={handleSaveEdit}
           onClose={() => setEditingExpense(null)}
-          isSaving={isSaving}
+          isSaving={isSaving === editingExpense.id}
         />
       )}
     </div>
   );
 }
 
-// Highlight matching text in description
 function highlightMatch(text, query) {
   if (!text || !query) return text;
   const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
@@ -196,11 +200,9 @@ function highlightMatch(text, query) {
   return (
     <>
       {parts.map((part, i) =>
-        regex.test(part) ? (
-          <mark key={i} className="bg-primary/15 text-primary rounded px-0.5 font-bold not-italic">
-            {part}
-          </mark>
-        ) : part
+        regex.test(part)
+          ? <mark key={i} className="bg-primary/15 text-primary rounded px-0.5 font-bold not-italic">{part}</mark>
+          : part
       )}
     </>
   );
