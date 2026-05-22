@@ -138,7 +138,7 @@ export default function TransferForm({ onSuccess, onCancel }) {
                 value={form[field]}
                 onChange={handle(field)}
                 required
-                className="w-full bg-white/40 backdrop-blur-md border border-white/50 text-on-surface rounded-2xl py-3.5 px-4 appearance-none focus:outline-none focus:ring-2 focus:ring-primary/40 font-medium text-sm transition-all touch-manipulation"
+                className="w-full bg-white/40 backdrop-blur-md border border-black/50 text-on-surface rounded-2xl py-3.5 px-4 appearance-none focus:outline-none focus:ring-2 focus:ring-primary/40 font-medium text-sm transition-all touch-manipulation"
               >
                 {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
