@@ -160,7 +160,7 @@ export default function TransferForm({ onSuccess, onCancel }) {
               value={form.amount}
               onChange={handle('amount')}
               placeholder="0.00"
-              className="w-full bg-white/40 backdrop-blur-md border border-black/50 text-on-surface rounded-2xl py-3.5 pl-9 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/40 font-medium text-base transition-all appearance-none touch-manipulation"
+              className="w-full bg-white/40 backdrop-blur-md border border-white/50 text-on-surface rounded-2xl py-3.5 pl-9 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/40 font-medium text-base transition-all appearance-none touch-manipulation"
             />
           </div>
         </div>
@@ -177,7 +177,7 @@ export default function TransferForm({ onSuccess, onCancel }) {
                 value={form.date}
                 onChange={handle('date')}
                 max={format(new Date(), 'yyyy-MM-dd')}
-                className="w-full bg-white/40 backdrop-blur-md border border-black/50 text-on-surface rounded-2xl py-3.5 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/40 font-medium text-sm transition-all [&::-webkit-calendar-picker-indicator]:opacity-40"
+                className="w-full bg-white/40 backdrop-blur-md border border-white/50 text-on-surface rounded-2xl py-3.5 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/40 font-medium text-sm transition-all [&::-webkit-calendar-picker-indicator]:opacity-40"
               />
             </div>
           </div>
@@ -192,7 +192,7 @@ export default function TransferForm({ onSuccess, onCancel }) {
                 value={form.note}
                 onChange={handle('note')}
                 placeholder="e.g. Monthly savings…"
-                className="w-full bg-white/40 backdrop-blur-md border border-black/50 text-on-surface rounded-2xl py-3.5 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/40 font-medium text-sm transition-all"
+                className="w-full bg-white/40 backdrop-blur-md border border-white/50 text-on-surface rounded-2xl py-3.5 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/40 font-medium text-sm transition-all"
               />
             </div>
           </div>

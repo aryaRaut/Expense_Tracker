@@ -194,7 +194,7 @@ export default function ExpenseForm({
               onChange={handleChange}
               inputMode="decimal"
               className={cn(
-                'w-full bg-white/40 backdrop-blur-md border border-black/50 text-on-surface rounded-2xl py-3.5 pl-9 pr-4 focus:outline-none focus:ring-2 transition-all font-medium shadow-sm text-base appearance-none',
+                'w-full bg-white/40 backdrop-blur-md border border-white/50 text-on-surface rounded-2xl py-3.5 pl-9 pr-4 focus:outline-none focus:ring-2 transition-all font-medium shadow-sm text-base appearance-none',
                 formData.type === 'Expense' ? 'focus:ring-red-200' : 'focus:ring-green-200'
               )}
               placeholder="0.00"
@@ -239,7 +239,7 @@ export default function ExpenseForm({
             value={formData.description}
             onChange={handleChange}
             className={cn(
-              'w-full bg-white/40 backdrop-blur-md border border-black/50 text-on-surface rounded-2xl py-3.5 px-4 focus:outline-none focus:ring-2 transition-all font-medium shadow-sm text-base',
+              'w-full bg-white/40 backdrop-blur-md border border-white/50 text-on-surface rounded-2xl py-3.5 px-4 focus:outline-none focus:ring-2 transition-all font-medium shadow-sm text-base',
               formData.type === 'Expense' ? 'focus:ring-red-200' : 'focus:ring-green-200'
             )}
             placeholder="What was this for?"
@@ -258,7 +258,7 @@ export default function ExpenseForm({
               value={formData.category}
               onChange={handleChange}
               className={cn(
-                'w-full bg-white/40 backdrop-blur-md border border-black/50 text-on-surface rounded-2xl py-3.5 px-4 pr-10 appearance-none focus:outline-none focus:ring-2 transition-all font-medium shadow-sm text-base',
+                'w-full bg-white/40 backdrop-blur-md border border-white/50 text-on-surface rounded-2xl py-3.5 px-4 pr-10 appearance-none focus:outline-none focus:ring-2 transition-all font-medium shadow-sm text-base',
                 formData.type === 'Expense' ? 'focus:ring-red-200' : 'focus:ring-green-200',
                 aiGuessed && 'ring-2 ring-primary/30'
               )}
@@ -282,7 +282,7 @@ export default function ExpenseForm({
             onChange={handleChange}
             max={format(new Date(), 'yyyy-MM-dd')}
             className={cn(
-              'w-full bg-white/40 backdrop-blur-md border border-black/50 text-on-surface rounded-2xl py-3.5 px-4 focus:outline-none focus:ring-2 transition-all font-medium shadow-sm text-base [&::-webkit-calendar-picker-indicator]:opacity-50',
+              'w-full bg-white/40 backdrop-blur-md border border-white/50 text-on-surface rounded-2xl py-3.5 px-4 focus:outline-none focus:ring-2 transition-all font-medium shadow-sm text-base [&::-webkit-calendar-picker-indicator]:opacity-50',
               formData.type === 'Expense' ? 'focus:ring-red-200' : 'focus:ring-green-200'
             )}
           />

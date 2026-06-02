@@ -104,7 +104,7 @@ export default function ExpenseList({ expenses, onDelete, onEdit }) {
           {filteredExpenses.map((expense) => (
             <div
               key={expense.id}
-              className="glass-effect-dark rounded-2xl md:rounded-3xl transition-all duration-200 overflow-hidden"
+              className="glass-effect-dark rounded-2xl md:rounded-3xl transition-all duration-200 overflow-hidden group"
             >
               {/* Main row */}
               <div className="flex items-center gap-3 p-4 md:p-6">
