@@ -44,7 +44,7 @@ def get_expenses():
         return jsonify({"error": "Unauthorized"}), 401
 
     try:
-        response = supabase.table("expenses").select("*").eq("user_id", user.id).order("date", desc=True).execute()
+        response = supabase.table("expenses").select("*").eq("user_id", user.id).order("date", desc=True).order("created_at", desc=True).execute()
         expenses = []
         for e in response.data:
             expense_item = {

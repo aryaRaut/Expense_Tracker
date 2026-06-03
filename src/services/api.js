@@ -17,7 +17,8 @@ export const fetchExpenses = async () => {
     .from('expenses')
     .select('*')
     .eq('user_id', user.id) // ← add this line
-    .order('date', { ascending: false });
+    .order('date', { ascending: false })
+    .order('created_at', { ascending: false });
 
   if (error) {
     console.error("Fetch error:", error);
