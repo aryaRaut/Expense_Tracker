@@ -13,6 +13,7 @@ const CATEGORIES = [
   'Health',
   'College',
   'Party',
+  'Investment',
   'Lending/Friends',
   'Other'
 ];
