@@ -6,7 +6,7 @@ import { fetchAccounts } from '../services/accounts';
 
 const CATEGORIES = [
   'Food & Dining', 'Transportation', 'Housing', 'Utilities',
-  'Entertainment', 'Health', 'College', 'Party', 'Lending/Friends', 'Other'
+  'Entertainment', 'Health', 'College', 'Party', 'Lending/Friends', 'Investment', 'Other'
 ];
 
 export default function ExpenseForm({
