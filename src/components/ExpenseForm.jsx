@@ -57,6 +57,7 @@ export default function ExpenseForm({
     else if (desc.match(/electric|water|internet|verizon|wifi/)) guessed = 'Utilities';
     else if (desc.match(/movie|netflix|spotify|concert|game/)) guessed = 'Entertainment';
     else if (desc.match(/doctor|pharmacy|cvs|medicine|gym/)) guessed = 'Health';
+    else if (desc.match(/angle one/)) guessed = 'Health';
     if (guessed && guessed !== formData.category) {
       setFormData((p) => ({ ...p, category: guessed }));
       setAiGuessed(true);
