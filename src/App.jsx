@@ -290,7 +290,7 @@ function App() {
               <h2 className="text-3xl font-manrope font-extrabold tracking-tight">Account Settings</h2>
               <p className="text-on-surface-variant mt-2">Manage your bank accounts and wallets.</p>
             </header>
-            <AccountSettings onAccountsChanged={handleAccountsChanged} />
+            <AccountSettings onAccountsChanged={handleAccountsChanged} expenses={expenses} />
             {/* Sign Out — mobile only */}
             <div className="md:hidden mt-6">
               <button

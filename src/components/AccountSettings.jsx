@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   fetchAccounts, addAccount, updateAccount,
   deleteAccount, fetchAccountTransactionCount,
@@ -11,37 +11,37 @@ import {
 import { cn } from '../utils/cn';
 
 const ACCOUNT_TYPES = [
-  { value: 'Savings',       label: 'Savings Account' },
-  { value: 'Salary',        label: 'Salary Account'  },
-  { value: 'Current',       label: 'Current Account' },
-  { value: 'Credit Card',   label: 'Credit Card'     },
-  { value: 'Cash',          label: 'Cash'            },
-  { value: 'UPI Wallet',    label: 'UPI Wallet'      },
-  { value: 'Fixed Deposit', label: 'Fixed Deposit'   },
+  { value: 'Savings', label: 'Savings Account' },
+  { value: 'Salary', label: 'Salary Account' },
+  { value: 'Current', label: 'Current Account' },
+  { value: 'Credit Card', label: 'Credit Card' },
+  { value: 'Cash', label: 'Cash' },
+  { value: 'UPI Wallet', label: 'UPI Wallet' },
+  { value: 'Fixed Deposit', label: 'Fixed Deposit' },
 ];
 
 const COLORS = [
-  '#6366f1','#0ea5e9','#10b981','#f43f5e',
-  '#f59e0b','#8b5cf6','#ec4899','#14b8a6',
-  '#f97316','#64748b',
+  '#6366f1', '#0ea5e9', '#10b981', '#f43f5e',
+  '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6',
+  '#f97316', '#64748b',
 ];
 
 function AccountIcon({ type, size = 5 }) {
   const cls = `w-${size} h-${size}`;
-  if (type === 'Credit Card')  return <CreditCard className={cls} />;
-  if (type === 'Cash')         return <Banknote   className={cls} />;
-  if (type === 'UPI Wallet')   return <Smartphone className={cls} />;
-  if (type === 'Savings' || type === 'Fixed Deposit') return <PiggyBank  className={cls} />;
-  if (type === 'Salary'  || type === 'Current')       return <Building2  className={cls} />;
+  if (type === 'Credit Card') return <CreditCard className={cls} />;
+  if (type === 'Cash') return <Banknote className={cls} />;
+  if (type === 'UPI Wallet') return <Smartphone className={cls} />;
+  if (type === 'Savings' || type === 'Fixed Deposit') return <PiggyBank className={cls} />;
+  if (type === 'Salary' || type === 'Current') return <Building2 className={cls} />;
   return <Wallet className={cls} />;
 }
 
 function AccountForm({ initial, onSave, onCancel, isSaving }) {
   const [form, setForm] = useState({
-    name:             initial?.name             || '',
-    type:             initial?.type             || 'Savings',
+    name: initial?.name || '',
+    type: initial?.type || 'Savings',
     starting_balance: initial?.starting_balance ?? '',
-    color:            initial?.color            || '#6366f1',
+    color: initial?.color || '#6366f1',
   });
 
   const handle = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
@@ -211,16 +211,16 @@ function DeleteModal({ account, allAccounts, txCount, onConfirm, onCancel, isDel
   );
 }
 
-export default function AccountSettings({ onAccountsChanged }) {
-  const [accounts, setAccounts]               = useState([]);
-  const [loading, setLoading]                 = useState(true);
-  const [showForm, setShowForm]               = useState(false);
-  const [editingAccount, setEditingAccount]   = useState(null);
+export default function AccountSettings({ onAccountsChanged, expenses = [] }) {
+  const [accounts, setAccounts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingAccount, setEditingAccount] = useState(null);
   const [deletingAccount, setDeletingAccount] = useState(null);
-  const [deleteTxCount, setDeleteTxCount]     = useState(0);
-  const [isSaving, setIsSaving]               = useState(false);
-  const [isDeleting, setIsDeleting]           = useState(false);
-  const [notification, setNotification]       = useState(null);
+  const [deleteTxCount, setDeleteTxCount] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   useEffect(() => { loadAccounts(); }, []);
 
@@ -239,7 +239,7 @@ export default function AccountSettings({ onAccountsChanged }) {
   const handleAdd = async (form) => {
     setIsSaving(true);
     try {
-      const newAcc  = await addAccount(form);
+      const newAcc = await addAccount(form);
       const updated = [...accounts, newAcc];
       setAccounts(updated);
       setShowForm(false);
@@ -281,7 +281,18 @@ export default function AccountSettings({ onAccountsChanged }) {
     finally { setIsDeleting(false); }
   };
 
+  const accountsWithBalance = useMemo(() => {
+    return accounts.map((account) => {
+      const accountExpenses = expenses.filter((e) => e.account_id === account.id);
+      const income = accountExpenses.filter((e) => e.type === 'Income').reduce((s, e) => s + Number(e.amount), 0);
+      const expense = accountExpenses.filter((e) => e.type !== 'Income').reduce((s, e) => s + Number(e.amount), 0);
+      const liveBalance = parseFloat(account.starting_balance || 0) + income - expense;
+      return { ...account, liveBalance };
+    });
+  }, [accounts, expenses]);
+
   const totalBalance = accounts.reduce((s, a) => s + parseFloat(a.starting_balance || 0), 0);
+  const totalCurrentBalance = accountsWithBalance.reduce((s, a) => s + a.liveBalance, 0);
 
   return (
     <div className="space-y-5 animate-in fade-in duration-500">
@@ -317,15 +328,22 @@ export default function AccountSettings({ onAccountsChanged }) {
 
       {/* Total pill */}
       {accounts.length > 0 && (
-        <div className="flex items-center gap-2.5 bg-surface-container-low border border-outline-variant/20 rounded-2xl px-4 py-2.5 w-fit">
-          <IndianRupee className="w-3.5 h-3.5 text-primary" />
-          <span className="text-xs text-on-surface-variant font-medium">Total:</span>
-          <span className="font-manrope font-bold text-primary text-base">
-            ₹{totalBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2.5 bg-surface-container-low border border-outline-variant/20 rounded-2xl px-4 py-2.5 w-fit">
+            <IndianRupee className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs text-on-surface-variant font-medium">Current Total:</span>
+            <span className={cn('font-manrope font-bold text-base', totalCurrentBalance < 0 ? 'text-rose-500' : 'text-primary')}>
+              {totalCurrentBalance < 0 ? '-' : ''}₹{Math.abs(totalCurrentBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 bg-surface-container-low/50 border border-outline-variant/15 rounded-2xl px-4 py-2.5 w-fit">
+            <span className="text-xs text-on-surface-variant font-medium">Starting Total:</span>
+            <span className="font-manrope font-semibold text-on-surface-variant text-sm">
+              ₹{totalBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </span>
+          </div>
         </div>
       )}
-
       {showForm && <AccountForm onSave={handleAdd} onCancel={() => setShowForm(false)} isSaving={isSaving} />}
 
       {loading ? (
@@ -344,7 +362,7 @@ export default function AccountSettings({ onAccountsChanged }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 md:gap-4">
-          {accounts.map((account) => (
+          {accountsWithBalance.map((account) => (
             <div key={account.id}>
               {editingAccount?.id === account.id ? (
                 <AccountForm initial={account} onSave={handleEdit} onCancel={() => setEditingAccount(null)} isSaving={isSaving} />
@@ -363,11 +381,14 @@ export default function AccountSettings({ onAccountsChanged }) {
                   </div>
 
                   <div className="text-right shrink-0">
-                    <p className={cn('font-manrope font-bold text-base md:text-lg', parseFloat(account.starting_balance) < 0 ? 'text-rose-500' : 'text-on-surface')}>
-                      {parseFloat(account.starting_balance) < 0 ? '-' : ''}
-                      ₹{Math.abs(parseFloat(account.starting_balance || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    <p className={cn('font-manrope font-bold text-base md:text-lg', account.liveBalance < 0 ? 'text-rose-500' : 'text-on-surface')}>
+                      {account.liveBalance < 0 ? '-' : ''}
+                      ₹{Math.abs(account.liveBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </p>
-                    <p className="text-[10px] text-on-surface-variant">starting balance</p>
+                    <p className="text-[10px] text-on-surface-variant">current balance</p>
+                    <p className="text-[10px] text-on-surface-variant/60 mt-1">
+                      Starting: ₹{parseFloat(account.starting_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </p>
                   </div>
 
                   {/* Actions — always visible on mobile */}
